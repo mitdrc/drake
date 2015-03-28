@@ -499,6 +499,76 @@ classdef QPLocomotionPlan < QPControllerPlan
       obj.gain_set = 'manip';
     end
 
+    % supports should be struct array with fields contact_pts (which is a cell with array elements) and bodies which is an array
+    % of body_ids. support_times should be a vector, takes the greatest lower bound and uses that support state
+    function obj = from_standup_traj(biped,qtraj,supports,support_times)
+      obj = QPLocomotionPlan(biped);
+      nq = biped.getNumPositions;
+      obj.is_quasistatic = true;
+      obj.gain_set = 'manip';
+      obj.x0 = [qtraj.eval(qtraj.tspan(1)); zeros(biped.getNumVelocities(), 1)];
+      q0 = obj.x0(1:nq);
+      obj.qtraj = qtraj;
+      obj.start_time = obj.qtraj.tspan(1);
+      obj.duration = obj.qtraj.tspan(end) - obj.start_time;
+      obj.supports = supports;
+      obj.support_times = support_times;
+
+
+      % Link constraints for the feet
+      % This assumes that the feet shouldn't move during this standup plan
+      kinsol = obj.robot.doKinematics(q0); 
+      link_constraints(1).link_ndx = obj.robot.foot_body_id.right;
+      link_constraints(1).pt = [0;0;0];
+      link_constraints(1).ts = [0, inf];
+      link_constraints(1).coefs = cat(3, zeros(6,1,3), reshape(forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.right,[0;0;0],1),[6,1,1]));
+      link_constraints(1).toe_off_allowed = [false, false];
+      link_constraints(2).link_ndx = obj.robot.foot_body_id.left;
+      link_constraints(2).pt = [0;0;0];
+      link_constraints(2).ts = [0, inf];
+      link_constraints(2).coefs = cat(3, zeros(6,1,3),reshape(forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.left,[0;0;0],1),[6,1,1]));
+      link_constraints(2).toe_off_allowed = [false, false];
+
+
+
+      % Link constraint for the pelvis
+      % add in the tracking for the pelvis, copied from DRCPlanner.configuration_traj
+      ts = qtraj.getBreaks();
+      pelvis_ind = findLinkId(obj.robot,'pelvis');
+      pelvis_pose = zeros(6,length(ts));
+      for i=1:length(ts)
+        kinsol = doKinematics(obj.robot,qtraj.eval(ts(i)));
+        pelvis_pose(:,i) = forwardKin(obj.robot,kinsol,pelvis_ind,[0;0;0],1);
+      end
+      link_constraints(3).link_ndx = pelvis_ind;
+      link_constraints(3).pt = [0;0;0];
+      pp = foh(ts,pelvis_pose);
+      [breaks, coefs, l, k, d] = unmkpp(pp);
+      link_constraints(3).ts = breaks;
+      coefs = reshape(coefs, [d,l,k]);
+      link_constraints(3).coefs = cat(3,zeros(6,2,2),coefs);;
+
+      obj.link_constraints = link_constraints;
+
+      % Need to make the ZMP controller, just the use the COM trajectory, may need to upsample the trajectory 
+      % Upsample and construct the COMtraj which we will "fake" as the ZMP traj for passing into the planZMPController function
+      N = 10*length(ts);
+      ts_com = linspace(qtraj.tspan(1),qtraj.tspan(2),N);
+      com_xy = zeros(2,length(ts));
+      for j = 1:length(ts_com)
+        kinsol = obj.robot.doKinematics(qtraj.eval(ts_com(j)));
+        com_position = obj.robot.getCOM(kinsol);
+        com_xy(:,j) = com_position(1:2); % only care about xy position of the com
+      end
+
+      com_traj = PPTrajectory(foh(ts_com,com_xy));
+      obj.zmptraj = com_traj;
+      com_traj = com_traj.setOutputFrame(desiredZMP);
+      [~, obj.V, obj.comtraj, obj.LIP_height] = obj.robot.planZMPController(com_traj, q0);
+      obj.V.S = obj.V.S.eval(0);
+      obj.zmp_final = com_xy(:,end);
+    end
+
     function [supports, support_times] = getSupports(zmp_knots)
       supports = [zmp_knots.supp];
       support_times = [zmp_knots.t];
