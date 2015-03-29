@@ -161,6 +161,13 @@ classdef QPLocomotionPlan < QPControllerPlan
 
         qp_input.body_motion_data(j).coefs = obj.link_constraints(j).coefs(:,body_t_ind,:);
 
+        lcmgl = LCMGLClient(num2str(j));
+        lcmgl.glColor3f(1,0,0);
+        pose_des = evalCubicSplineSegment(t_global - qp_input.body_motion_data(j).ts(1), qp_input.body_motion_data(j).coefs);
+        lcmgl.sphere(pose_des(1:3), 0.02, 20, 20);
+        lcmgl.switchBuffers();
+
+
       end
       assert(pelvis_has_tracking, 'Expecting a link_constraints block for the pelvis');
 
@@ -574,7 +581,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       r = biped;
       obj = QPLocomotionPlan(biped);
       nq = biped.getNumPositions;
-      obj.is_quasistatic = true;
+      obj.is_quasistatic = false;
       obj.gain_set = 'manip';
       obj.x0 = [qtraj.eval(qtraj.tspan(1)); zeros(biped.getNumVelocities(), 1)];
       q0 = obj.x0(1:nq);
