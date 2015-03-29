@@ -516,7 +516,7 @@ classdef QPLocomotionPlan < QPControllerPlan
 
 
       % Link constraints for the feet
-      % This assumes that the feet shouldn't move during this standup plan
+      % This assumes that the feet shouldn't move during this standup plan                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
       kinsol = obj.robot.doKinematics(q0); 
       link_constraints(1).link_ndx = obj.robot.foot_body_id.right;
       link_constraints(1).pt = [0;0;0];
@@ -546,7 +546,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       [breaks, coefs, l, k, d] = unmkpp(pp);
       link_constraints(3).ts = breaks;
       coefs = reshape(coefs, [d,l,k]);
-      link_constraints(3).coefs = cat(3,zeros(6,2,2),coefs);;
+      link_constraints(3).coefs = cat(3,zeros(6,2,2),coefs);
 
       obj.link_constraints = link_constraints;
 
@@ -565,7 +565,49 @@ classdef QPLocomotionPlan < QPControllerPlan
       obj.zmptraj = com_traj;
       com_traj = com_traj.setOutputFrame(desiredZMP);
       [~, obj.V, obj.comtraj, obj.LIP_height] = obj.robot.planZMPController(com_traj, q0);
-      obj.V.S = obj.V.S.eval(0);
+%       obj.V.S = obj.V.S.eval(0);
+      obj.zmp_final = com_xy(:,end);
+    end
+
+    % very similar to from_standup_traj but just want to change the link_constraints on the feet
+    function obj = from_one_leg_balance_traj(biped,qtraj,supports,support_times)
+      r = biped;
+      obj = QPLocomotionPlan(biped);
+      nq = biped.getNumPositions;
+      obj.is_quasistatic = true;
+      obj.gain_set = 'manip';
+      obj.x0 = [qtraj.eval(qtraj.tspan(1)); zeros(biped.getNumVelocities(), 1)];
+      q0 = obj.x0(1:nq);
+      obj.qtraj = qtraj;
+      obj.start_time = obj.qtraj.tspan(1);
+      obj.duration = obj.qtraj.tspan(end) - obj.start_time;
+      obj.supports = supports;
+      obj.support_times = support_times;
+
+      link_constraints = struct('link_ndx',{},'pt',{},'ts',{},'coefs',{},'toe_off_allowed',{});
+      link_constraints(1) = QPLocomotionPlan.genLinkConstraint(r,qtraj,r.findLinkId('r_foot'));
+      link_constraints(2) = QPLocomotionPlan.genLinkConstraint(r,qtraj,r.findLinkId('l_foot'));
+      link_constraints(3) = QPLocomotionPlan.genLinkConstraint(r,qtraj,r.findLinkId('pelvis'));
+
+      obj.link_constraints = link_constraints;
+
+      % Need to make the ZMP controller, just the use the COM trajectory, may need to upsample the trajectory 
+      % Upsample and construct the COMtraj which we will "fake" as the ZMP traj for passing into the planZMPController function
+      ts = qtraj.getBreaks();
+      N = 10*length(ts);
+      ts_com = linspace(qtraj.tspan(1),qtraj.tspan(2),N);
+      com_xy = zeros(2,length(ts));
+      for j = 1:length(ts_com)
+        kinsol = obj.robot.doKinematics(qtraj.eval(ts_com(j)));
+        com_position = obj.robot.getCOM(kinsol);
+        com_xy(:,j) = com_position(1:2); % only care about xy position of the com
+      end
+
+      com_traj = PPTrajectory(foh(ts_com,com_xy));
+      obj.zmptraj = com_traj;
+      com_traj = com_traj.setOutputFrame(desiredZMP);
+      [~, obj.V, obj.comtraj, obj.LIP_height] = obj.robot.planZMPController(com_traj, q0);
+%       obj.V.S = obj.V.S.eval(0);
       obj.zmp_final = com_xy(:,end);
     end
 
@@ -577,6 +619,28 @@ classdef QPLocomotionPlan < QPControllerPlan
     function zmptraj = getZMPTraj(zmp_knots)
       zmptraj = PPTrajectory(foh([zmp_knots.t], [zmp_knots.zmp]));
       zmptraj = setOutputFrame(zmptraj, SingletonCoordinateFrame('desiredZMP',2,'z',{'x_zmp','y_zmp'}));
+    end
+
+    function link_constraint_body = genLinkConstraint(r,qtraj,body_id,pt)
+      if nargin < 4
+        pt = [0;0;0];
+      end
+
+      ts = qtraj.getBreaks();
+      body_position = zeros(6,length(ts));
+      for j = 1:length(ts)
+        kinsol = r.doKinematics(qtraj.eval(ts(j)));
+        body_position(:,j) = r.forwardKin(kinsol,body_id,pt,1);
+      end
+
+      body_traj = pchip(ts,body_position);
+      link_constraint_body.link_ndx = body_id;
+      link_constraint_body.pt = pt;
+      [breaks, coefs, l, k, d] = unmkpp(body_traj);
+      coefs = reshape(coefs, [d,l,k]);
+      link_constraint_body.ts = breaks;
+      link_constraint_body.coefs = coefs;
+      link_constraint_body.toe_off_allowed = false(1,length(link_constraint_body.ts));
     end
 
   end
