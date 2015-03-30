@@ -512,6 +512,8 @@ classdef QPLocomotionPlan < QPControllerPlan
       obj = QPLocomotionPlan(biped);
       nq = biped.getNumPositions;
       obj.is_quasistatic = true;
+
+      % should we use manip or standing params??? Maybe manip is ok
       obj.gain_set = 'manip';
       obj.x0 = [qtraj.eval(qtraj.tspan(1)); zeros(biped.getNumVelocities(), 1)];
       q0 = obj.x0(1:nq);
@@ -559,21 +561,23 @@ classdef QPLocomotionPlan < QPControllerPlan
 
       % Need to make the ZMP controller, just the use the COM trajectory, may need to upsample the trajectory 
       % Upsample and construct the COMtraj which we will "fake" as the ZMP traj for passing into the planZMPController function
+      % Construct the ZMP Controller
+      ts = qtraj.getBreaks();
       N = 10*length(ts);
       ts_com = linspace(qtraj.tspan(1),qtraj.tspan(2),N);
-      com_xy = zeros(2,length(ts));
+      com_xyz = zeros(3,length(ts));
       for j = 1:length(ts_com)
         kinsol = obj.robot.doKinematics(qtraj.eval(ts_com(j)));
         com_position = obj.robot.getCOM(kinsol);
-        com_xy(:,j) = com_position(1:2); % only care about xy position of the com
+        com_xyz(:,j) = com_position(1:3); % only care about xy position of the com
       end
 
-      com_traj = PPTrajectory(foh(ts_com,com_xy));
-      obj.zmptraj = com_traj;
-      com_traj = com_traj.setOutputFrame(desiredZMP);
-      [~, obj.V, obj.comtraj, obj.LIP_height] = obj.robot.planZMPController(com_traj, q0);
+      com_traj = PPTrajectory(foh(ts_com,com_xyz));
+      g = obj.robot.getGravity();
+      obj.zmptraj = QPLocomotionPlan.computeZMPFromCOM(com_traj,g);
+      [~, obj.V, obj.comtraj, obj.LIP_height] = obj.robot.planZMPController(obj.zmptraj, q0);
 %       obj.V.S = obj.V.S.eval(0);
-      obj.zmp_final = com_xy(:,end);
+      obj.zmp_final = com_xyz(1:2,end); % maybe should set this to be what zmpfinal really is???
     end
 
     % very similar to from_standup_traj but just want to change the link_constraints on the feet
@@ -598,8 +602,7 @@ classdef QPLocomotionPlan < QPControllerPlan
 
       obj.link_constraints = link_constraints;
 
-      % Need to make the ZMP controller, just the use the COM trajectory, may need to upsample the trajectory 
-      % Upsample and construct the COMtraj which we will "fake" as the ZMP traj for passing into the planZMPController function
+      % Construct the ZMP Controller
       ts = qtraj.getBreaks();
       N = 10*length(ts);
       ts_com = linspace(qtraj.tspan(1),qtraj.tspan(2),N);
