@@ -582,7 +582,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       obj = QPLocomotionPlan(biped);
       nq = biped.getNumPositions;
       obj.is_quasistatic = false;
-      obj.gain_set = 'manip';
+      obj.gain_set = 'standing';
       obj.x0 = [qtraj.eval(qtraj.tspan(1)); zeros(biped.getNumVelocities(), 1)];
       q0 = obj.x0(1:nq);
       obj.qtraj = qtraj;
@@ -603,19 +603,19 @@ classdef QPLocomotionPlan < QPControllerPlan
       ts = qtraj.getBreaks();
       N = 10*length(ts);
       ts_com = linspace(qtraj.tspan(1),qtraj.tspan(2),N);
-      com_xy = zeros(2,length(ts));
+      com_xyz = zeros(3,length(ts));
       for j = 1:length(ts_com)
         kinsol = obj.robot.doKinematics(qtraj.eval(ts_com(j)));
         com_position = obj.robot.getCOM(kinsol);
-        com_xy(:,j) = com_position(1:2); % only care about xy position of the com
+        com_xyz(:,j) = com_position(1:3); % only care about xy position of the com
       end
 
-      com_traj = PPTrajectory(foh(ts_com,com_xy));
-      obj.zmptraj = com_traj;
-      com_traj = com_traj.setOutputFrame(desiredZMP);
-      [~, obj.V, obj.comtraj, obj.LIP_height] = obj.robot.planZMPController(com_traj, q0);
+      com_traj = PPTrajectory(foh(ts_com,com_xyz));
+      g = r.getGravity();
+      obj.zmptraj = QPLocomotionPlan.computeZMPFromCOM(com_traj,g);
+      [~, obj.V, obj.comtraj, obj.LIP_height] = obj.robot.planZMPController(obj.zmptraj, q0);
 %       obj.V.S = obj.V.S.eval(0);
-      obj.zmp_final = com_xy(:,end);
+      obj.zmp_final = com_xyz(1:2,end); % maybe should set this to be what zmpfinal really is???
     end
 
     function [supports, support_times] = getSupports(zmp_knots)
@@ -626,6 +626,23 @@ classdef QPLocomotionPlan < QPControllerPlan
     function zmptraj = getZMPTraj(zmp_knots)
       zmptraj = PPTrajectory(foh([zmp_knots.t], [zmp_knots.zmp]));
       zmptraj = setOutputFrame(zmptraj, SingletonCoordinateFrame('desiredZMP',2,'z',{'x_zmp','y_zmp'}));
+    end
+
+    function zmp_traj = computeZMPFromCOM(com_traj,g)
+      ts = com_traj.getBreaks();
+      g_z = g(3);
+      com_position_initial = com_traj.eval(ts(1));
+      com_height = com_position_initial(3);
+      com_dot_traj = fnder(com_traj);
+      com_ddot_traj = fnder(com_dot_traj);
+      com_vals = com_traj.eval(ts);
+      com_ddot_vals = com_ddot_traj.eval(ts);
+      zmp_vals = com_vals - com_height/g_z.*com_ddot_vals;
+
+      % only care about x & y, not z
+      zmp_vals = zmp_vals(1:2,:);
+      zmp_traj = PPTrajectory(pchip(ts,zmp_vals));
+      zmp_traj = zmp_traj.setOutputFrame(desiredZMP);
     end
 
     function link_constraint_body = genLinkConstraint(r,qtraj,body_id,pt)
