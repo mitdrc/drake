@@ -588,7 +588,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       obj = QPLocomotionPlan(biped);
       nq = biped.getNumPositions;
       obj.is_quasistatic = false;
-      obj.gain_set = 'standing';
+      obj.gain_set = 'manip';
       obj.x0 = [qtraj.eval(qtraj.tspan(1)); zeros(biped.getNumVelocities(), 1)];
       q0 = obj.x0(1:nq);
       obj.qtraj = qtraj;
