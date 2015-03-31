@@ -533,7 +533,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       qtraj = PPTrajectory(pchip(ts,q_vals));
 
       % should we use manip or standing params??? Maybe manip is ok
-      obj.gain_set = 'manip';
+      obj.gain_set = 'standing';
       obj.x0 = [qtraj.eval(qtraj.tspan(1)); zeros(biped.getNumVelocities(), 1)];
       q0 = obj.x0(1:nq);
       obj.qtraj = qtraj;
@@ -579,9 +579,9 @@ classdef QPLocomotionPlan < QPControllerPlan
       %% Construct link constraints
       % maybe the link constraints on the feet should be special since we know that they don't move in this type of plan?
       link_constraints = struct('link_ndx',{},'pt',{},'ts',{},'coefs',{},'toe_off_allowed',{});
-      link_constraints(1) = QPLocomotionPlan.genLinkConstraint(r,qtraj,r.findLinkId('r_foot'));
-      link_constraints(2) = QPLocomotionPlan.genLinkConstraint(r,qtraj,r.findLinkId('l_foot'));
-      link_constraints(3) = QPLocomotionPlan.genLinkConstraint(r,qtraj,r.findLinkId('pelvis'));
+      link_constraints(1) = QPLocomotionPlan.genLinkConstraint(obj.robot,qtraj,obj.robot.findLinkId('r_foot'));
+      link_constraints(2) = QPLocomotionPlan.genLinkConstraint(obj.robot,qtraj,obj.robot.findLinkId('l_foot'));
+      link_constraints(3) = QPLocomotionPlan.genLinkConstraint(obj.robot,qtraj,obj.robot.findLinkId('pelvis'));
 
       obj.link_constraints = link_constraints;
 
