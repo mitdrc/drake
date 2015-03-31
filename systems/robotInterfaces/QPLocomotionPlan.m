@@ -525,7 +525,12 @@ classdef QPLocomotionPlan < QPControllerPlan
     function obj = from_standup_traj(biped,qtraj,supports,support_times)
       obj = QPLocomotionPlan(biped);
       nq = biped.getNumPositions;
-      obj.is_quasistatic = true;
+      obj.is_quasistatic = false;
+
+      % make sure the qtraj is made with pchip . . .
+      ts = qtraj.getBreaks();
+      q_vals = qtraj.eval(ts);
+      qtraj = PPTrajectory(pchip(ts,q_vals));
 
       % should we use manip or standing params??? Maybe manip is ok
       obj.gain_set = 'manip';
@@ -538,44 +543,51 @@ classdef QPLocomotionPlan < QPControllerPlan
       obj.support_times = support_times;
 
 
-      % Link constraints for the feet
-      % This assumes that the feet shouldn't move during this standup plan                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
-      kinsol = obj.robot.doKinematics(q0); 
-      link_constraints(1).link_ndx = obj.robot.foot_body_id.right;
-      link_constraints(1).pt = [0;0;0];
-      link_constraints(1).ts = [0, inf];
-      link_constraints(1).coefs = cat(3, zeros(6,1,3), reshape(forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.right,[0;0;0],1),[6,1,1]));
-      link_constraints(1).toe_off_allowed = [false, false];
-      link_constraints(2).link_ndx = obj.robot.foot_body_id.left;
-      link_constraints(2).pt = [0;0;0];
-      link_constraints(2).ts = [0, inf];
-      link_constraints(2).coefs = cat(3, zeros(6,1,3),reshape(forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.left,[0;0;0],1),[6,1,1]));
-      link_constraints(2).toe_off_allowed = [false, false];
+      % % Link constraints for the feet
+      % % This assumes that the feet shouldn't move during this standup plan                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+      % kinsol = obj.robot.doKinematics(q0); 
+      % link_constraints(1).link_ndx = obj.robot.foot_body_id.right;
+      % link_constraints(1).pt = [0;0;0];
+      % link_constraints(1).ts = [0, inf];
+      % link_constraints(1).coefs = cat(3, zeros(6,1,3), reshape(forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.right,[0;0;0],1),[6,1,1]));
+      % link_constraints(1).toe_off_allowed = [false, false];
+      % link_constraints(2).link_ndx = obj.robot.foot_body_id.left;
+      % link_constraints(2).pt = [0;0;0];
+      % link_constraints(2).ts = [0, inf];
+      % link_constraints(2).coefs = cat(3, zeros(6,1,3),reshape(forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.left,[0;0;0],1),[6,1,1]));
+      % link_constraints(2).toe_off_allowed = [false, false];
 
 
 
-      % Link constraint for the pelvis
-      % add in the tracking for the pelvis, copied from DRCPlanner.configuration_traj
-      ts = qtraj.getBreaks();
-      pelvis_ind = findLinkId(obj.robot,'pelvis');
-      pelvis_pose = zeros(6,length(ts));
-      for i=1:length(ts)
-        kinsol = doKinematics(obj.robot,qtraj.eval(ts(i)));
-        pelvis_pose(:,i) = forwardKin(obj.robot,kinsol,pelvis_ind,[0;0;0],1);
-      end
-      link_constraints(3).link_ndx = pelvis_ind;
-      link_constraints(3).pt = [0;0;0];
-      pp = foh(ts,pelvis_pose);
-      [breaks, coefs, l, k, d] = unmkpp(pp);
-      link_constraints(3).ts = breaks;
-      coefs = reshape(coefs, [d,l,k]);
-      link_constraints(3).coefs = cat(3,zeros(6,2,2),coefs);
+      % % Link constraint for the pelvis
+      % % add in the tracking for the pelvis, copied from DRCPlanner.configuration_traj
+      % ts = qtraj.getBreaks();
+      % pelvis_ind = findLinkId(obj.robot,'pelvis');
+      % pelvis_pose = zeros(6,length(ts));
+      % for i=1:length(ts)
+      %   kinsol = doKinematics(obj.robot,qtraj.eval(ts(i)));
+      %   pelvis_pose(:,i) = forwardKin(obj.robot,kinsol,pelvis_ind,[0;0;0],1);
+      % end
+      % link_constraints(3).link_ndx = pelvis_ind;
+      % link_constraints(3).pt = [0;0;0];
+      % pp = foh(ts,pelvis_pose);
+      % [breaks, coefs, l, k, d] = unmkpp(pp);
+      % link_constraints(3).ts = breaks;
+      % coefs = reshape(coefs, [d,l,k]);
+      % link_constraints(3).coefs = cat(3,zeros(6,2,2),coefs);
+
+      %% Construct link constraints
+      % maybe the link constraints on the feet should be special since we know that they don't move in this type of plan?
+      link_constraints = struct('link_ndx',{},'pt',{},'ts',{},'coefs',{},'toe_off_allowed',{});
+      link_constraints(1) = QPLocomotionPlan.genLinkConstraint(r,qtraj,r.findLinkId('r_foot'));
+      link_constraints(2) = QPLocomotionPlan.genLinkConstraint(r,qtraj,r.findLinkId('l_foot'));
+      link_constraints(3) = QPLocomotionPlan.genLinkConstraint(r,qtraj,r.findLinkId('pelvis'));
 
       obj.link_constraints = link_constraints;
 
-      % Need to make the ZMP controller, just the use the COM trajectory, may need to upsample the trajectory 
-      % Upsample and construct the COMtraj which we will "fake" as the ZMP traj for passing into the planZMPController function
-      % Construct the ZMP Controller
+      % Need to make the ZMP controller, get the COM trajectory, and then make the zmp traj from that using 
+      % computeZMPFromCOM
+      % we upsample the trajectory to be more precise
       ts = qtraj.getBreaks();
       N = 10*length(ts);
       ts_com = linspace(qtraj.tspan(1),qtraj.tspan(2),N);
