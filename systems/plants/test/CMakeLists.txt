@@ -3,6 +3,8 @@ cmake_minimum_required (VERSION 2.6)
 pods_find_pkg_config(bullet)
 
 if (eigen3_FOUND)
+  add_rbm_mex(compareParsersmex)
+  
   add_executable(urdfKinTest urdfKinTest.cpp)
   include_directories( .. )
   target_link_libraries(urdfKinTest drakeRBM)
@@ -14,6 +16,13 @@ if (eigen3_FOUND)
 
   add_executable(urdfManipulatorDynamicsTest urdfManipulatorDynamicsTest.cpp)
   target_link_libraries(urdfManipulatorDynamicsTest drakeRBM)
+  
+  if (NOT MSVC10)
+    # this test does not compile on MSVC 2010 because of the use of variadic templates
+    add_executable(testKinematicsCacheChecks testKinematicsCacheChecks.cpp)
+    target_link_libraries(testKinematicsCacheChecks drakeRBM)
+    add_test(NAME testKinematicsCacheChecks WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}" COMMAND testKinematicsCacheChecks)
+  endif()
 endif()
 
 macro(add_ik_cpp)
