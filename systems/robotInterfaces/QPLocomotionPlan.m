@@ -165,9 +165,13 @@ classdef QPLocomotionPlan < QPControllerPlan
           else
             if ~any(obj.supports(supp_idx).bodies == body_id)
               obj.toe_off_active.(foot_name) = false;
-              obj = obj.updateSwingTrajectory(t_plan, j, body_t_ind-1, kinsol, qd);
+              % obj = obj.updateSwingTrajectory(t_plan, j, body_t_ind-1, kinsol, qd);
             end
           end
+          if supp_idx > 1 && any(obj.supports(supp_idx-1).bodies == body_id) && ~any(obj.supports(supp_idx).bodies == body_id) && (t_plan - obj.support_times(supp_idx)) < 0.05
+            obj = obj.updateSwingTrajectory(t_plan, j, body_t_ind-1, kinsol, qd);
+          end
+
 
           if obj.toe_off_active.(foot_name)
             body_mask = obj.supports(supp_idx).bodies == body_id;
