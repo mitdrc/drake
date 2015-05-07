@@ -105,6 +105,7 @@ struct QPLocomotionPlanSettings {
   std::vector<Eigen::DenseIndex> plan_shift_zmp_indices = { { 1, 2 } };
   std::vector<Eigen::DenseIndex> plan_shift_body_motion_indices  = { 3 };
   double g = 9.81;
+  double min_foot_shift_delay = 0.2; // seconds to wait before updating foot-specific plan shifts
   bool is_quasistatic = false;
   KneeSettings knee_settings = createDefaultKneeSettings();
   std::string pelvis_name = "pelvis";
@@ -168,6 +169,7 @@ private:
   double start_time;
   Vector3d plan_shift;
   std::map<Side,Vector3d> foot_shifts;
+  double last_foot_shift_time = 0;
   drake::lcmt_qp_controller_input last_qp_input;
   std::map<Side, bool> toe_off_active;
 
