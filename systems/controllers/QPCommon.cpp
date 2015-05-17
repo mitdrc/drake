@@ -12,6 +12,7 @@ const bool CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCH = false;
 const bool PUBLISH_ZMP_COM_OBSERVER_STATE = true;
 
 #define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.05
+#define CONTACT_SHRINK_FACTOR 0.817
 
 double logisticSigmoid(double L, double k, double x, double x0) {
   // Compute the value of the logistic sigmoid f(x) = L / (1 + exp(-k(x - x0)))
@@ -142,10 +143,17 @@ std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> l
       available_supports[i].support_surface[j] = qp_input->support_data[i].support_surface[j];
     }
     available_supports[i].contact_pts.resize(qp_input->support_data[i].num_contact_pts);
-    for (int j=0; j < qp_input->support_data[i].num_contact_pts; j++) {
-      for (int k = 0; k < 3; k++) {
-        available_supports[i].contact_pts[j][k] = qp_input->support_data[i].contact_pts[k][j];
+    for (int k = 0; k < 3; k++) {
+      VectorXd contact_pt_row(qp_input->support_data[i].num_contact_pts);
+      for (int j=0; j < qp_input->support_data[i].num_contact_pts; j++) {
+        contact_pt_row(j) = qp_input->support_data[i].contact_pts[k][j];
       }
+      double mean = contact_pt_row.mean();
+      for (int j=0; j < qp_input->support_data[i].num_contact_pts; j++) {
+        available_supports[i].contact_pts[j][k] = CONTACT_SHRINK_FACTOR * (contact_pt_row(j) - mean) + mean;
+      }
+    }
+    for (int j=0; j < qp_input->support_data[i].num_contact_pts; j++) {
       available_supports[i].contact_pts[j][3] = 1;
     }
   }
