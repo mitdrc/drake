@@ -1,5 +1,6 @@
 #include "mex.h"
 #include <Eigen/Core>
+#include <vector>
 
 #ifndef DRAKE_MEX_UTIL_H_
 #define DRAKE_MEX_UTIL_H_

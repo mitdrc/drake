@@ -211,7 +211,18 @@ classdef QPLocomotionPlanSettings
           biped.default_walking_params);
       end
       [zmp_knots, foot_motion_data] = biped.planZMPTraj(x0(1:biped.getNumPositions()), footstep_plan.footsteps, zmp_options);
-      obj = QPLocomotionPlanSettings.fromBipedFootAndZMPKnots(foot_motion_data, zmp_knots, biped, x0);
+      options = struct();
+      if isfield(footstep_plan.params, 'pelvis_trajectory_mode')
+        switch footstep_plan.params.pelvis_trajectory_mode
+          case footstep_plan.params.HEURISTIC
+            options.pelvis_trajectory_mode = 'heuristic';
+          case footstep_plan.params.IK
+            options.pelvis_trajectory_mode = 'ik';
+          otherwise
+            error('pelvis trajectory mode not recognized');
+        end
+      end
+      obj = QPLocomotionPlanSettings.fromBipedFootAndZMPKnots(foot_motion_data, zmp_knots, biped, x0, options);
     end
 
     function obj = fromBipedFootAndZMPKnots(foot_motion_data, zmp_knots, biped, x0, options)
@@ -219,20 +230,32 @@ classdef QPLocomotionPlanSettings
         options = struct();
       end
       options = applyDefaults(options, struct('pelvis_height_above_sole', biped.default_walking_params.pelvis_height_above_foot_sole,...
-        'pelvis_height_transition_knot',1));
+        'pelvis_height_transition_knot',1, 'pelvis_trajectory_mode', 'heuristic'));
 
+      nq = getNumPositions(biped);
       obj = QPLocomotionPlanSettings(biped);
       obj.x0 = x0;
       arm_inds = biped.findPositionIndices('arm');
       obj.qtraj(arm_inds) = x0(arm_inds);
       % obj.qtraj = x0(1:biped.getNumPositions());
+      q0 = x0(1 : nq);
+      S = load(obj.robot.fixed_point_file);
+      qstar = S.xstar(1 : nq);
 
       [obj.supports, obj.support_times] = QPLocomotionPlanSettings.getSupports(zmp_knots);
       obj.zmptraj = QPLocomotionPlanSettings.getZMPTraj(zmp_knots);
       [~, obj.V, obj.comtraj, LIP_height] = biped.planZMPController(obj.zmptraj, obj.x0, options);
       obj.D_control = -biped.default_walking_params.nominal_LIP_COM_height / obj.g * eye(2);
       obj.zmp_data.D = -LIP_height / obj.g * eye(2);
-      pelvis_motion_data = biped.getPelvisMotionForWalking(x0, foot_motion_data, obj.supports, obj.support_times, options);
+      
+      if strcmp(options.pelvis_trajectory_mode, 'heuristic')
+        pelvis_motion_data = biped.getPelvisMotionForWalking(x0, foot_motion_data, obj.supports, obj.support_times, options);
+      else
+%         options.pelvis_height_above_sole = 1;
+        min_knee_angle_for_plan = 0.5; % smaller than min knee angle. That's fine, otherwise the controller wouldn't do toe off anyway
+        pelvis_motion_data = biped.planWalkingPelvisMotion(obj, foot_motion_data, q0, qstar, options.pelvis_height_above_sole, min_knee_angle_for_plan);
+      end
+      
       obj.body_motions = [foot_motion_data, pelvis_motion_data];
 
       obj.duration = obj.support_times(end)-obj.support_times(1)-0.001;
