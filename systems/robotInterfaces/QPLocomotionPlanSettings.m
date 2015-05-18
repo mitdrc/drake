@@ -186,12 +186,15 @@ classdef QPLocomotionPlanSettings
       rfoot_xyzquat = forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.right,[0;0;0],2);
       rfoot_xyzexpmap = [rfoot_xyzquat(1:3);quat2expmap(rfoot_xyzquat(4:7))];
       obj.body_motions(1).coefs = cat(3, zeros(6,1,3), reshape(rfoot_xyzexpmap,[6,1,1]));
-      obj.body_motions(1).in_floating_base_nullspace = true(1, 2);
 
       lfoot_xyzquat = forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.left,[0;0;0],2);
       lfoot_xyzexpmap = [lfoot_xyzquat(1:3);quat2expmap(lfoot_xyzquat(4:7))];
       obj.body_motions(2).coefs = cat(3, zeros(6,1,3),reshape(lfoot_xyzexpmap,[6,1,1]));
-      obj.body_motions(2).in_floating_base_nullspace = true(1, 2);
+
+      for j = 1:2
+        obj.body_motions(j).in_floating_base_nullspace = true(1, 2);
+        obj.body_motions(j).control_pose_when_in_contact = true(1,2);
+      end
 
       pelvis_target_xyzexpmap = [pelvis_target_xyzquat(1:3);quat2expmap(pelvis_target_xyzquat(4:7))];
       obj.body_motions(3).coefs = cat(3, zeros(6,1,3),reshape(pelvis_target_xyzexpmap,[6,1,1,]));
@@ -234,7 +237,7 @@ classdef QPLocomotionPlanSettings
       obj.zmp_data.D = -LIP_height / obj.g * eye(2);
       pelvis_motion_data = biped.getPelvisMotionForWalking(x0, foot_motion_data, obj.supports, obj.support_times, options);
       obj.body_motions = [foot_motion_data, pelvis_motion_data];
-
+ 
       obj.duration = obj.support_times(end)-obj.support_times(1)-0.001;
       if isa(obj.V.S, 'ConstantTrajectory')
         obj.V.S = fasteval(obj.V.S, 0);
@@ -252,7 +255,9 @@ classdef QPLocomotionPlanSettings
                                                                   biped.foot_body_id.left],...
                                               'quat_task_to_world',repmat([1;0;0;0],1,3),...
                                               'translation_task_to_world',zeros(3,3),...
-                                              'bodies_to_control_when_in_contact', biped.findLinkId('pelvis'),...
+                                              'bodies_to_control_when_in_contact', [biped.findLinkId('pelvis'),...
+                                                                                    biped.foot_body_id.right,...
+                                                                                    biped.foot_body_id.left],...
                                               'is_quasistatic',false,...
                                               'supports', RigidBodySupportState(biped, [biped.foot_body_id.right, biped.foot_body_id.left]),...
                                               'support_times',[0, inf],...

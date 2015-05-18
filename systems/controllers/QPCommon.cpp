@@ -652,10 +652,20 @@ int setupAndSolveQP(
           Jb.block(0,0,6,6) = MatrixXd::Zero(6,6);
           // Jbdot.block(0,0,6,6) = MatrixXd::Zero(6,6);
         }
-        for (int j=0; j<6; j++) {
-          if (!std::isnan(desired_body_accelerations[i].body_vdot(j))) {
-            Aeq.block(equality_ind,0,1,nq) = Jb.row(j);
-            beq[equality_ind++] = -Jbdotv(j) + desired_body_accelerations[i].body_vdot(j);
+        if (inSupport(active_supports, body_id0)) {
+          // If the body is in support, only control its orientation. 
+          for (int j=0; j<3; j++) {
+            if (!std::isnan(desired_body_accelerations[i].body_vdot(j))) {
+              Aeq.block(equality_ind,0,1,nq) = Jb.row(j);
+              beq[equality_ind++] = -Jbdotv(j) + desired_body_accelerations[i].body_vdot(j);
+            }
+          }
+        } else {
+          for (int j=0; j<6; j++) {
+            if (!std::isnan(desired_body_accelerations[i].body_vdot(j))) {
+              Aeq.block(equality_ind,0,1,nq) = Jb.row(j);
+              beq[equality_ind++] = -Jbdotv(j) + desired_body_accelerations[i].body_vdot(j);
+            }
           }
         }
       }
@@ -817,6 +827,15 @@ int setupAndSolveQP(
       if (desired_body_accelerations[i].weight > 0) {
         int body_id0 = pdata->r->parseBodyOrFrameID(desired_body_accelerations[i].body_or_frame_id0,(Matrix4d*)nullptr);
         if (desired_body_accelerations[i].control_pose_when_in_contact || !inSupport(active_supports,body_id0)) {
+          if (inSupport(active_supports, body_id0)) {
+            // If we're in support and still trying to control this body, then
+            // only control its orientation. Any attempt to control its
+            // position will just end up fighting the controller's desired
+            // contact forces.
+            for (int j=3; j<6; ++j) {
+              desired_body_accelerations[i].weight_multiplier(j) = 0.0;
+            }
+          }
           auto J_geometric = pdata->r->geometricJacobian<double>(0,desired_body_accelerations[i].body_or_frame_id0,desired_body_accelerations[i].body_or_frame_id0,0,true,(std::vector<int>*)nullptr);
           auto J_geometric_dot_times_v = pdata->r->geometricJacobianDotTimesV<double>(0,desired_body_accelerations[i].body_or_frame_id0,desired_body_accelerations[i].body_or_frame_id0,0);
           Matrix<double,6,Dynamic> Jb_compact = J_geometric.value();
