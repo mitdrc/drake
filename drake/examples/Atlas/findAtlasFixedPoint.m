@@ -11,7 +11,7 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
 options.floating = true;
 options.dt = 0.002;
 r = Atlas('/home/gizatt/drc/software/drake/drake/examples/Atlas/urdf/atlas_convex_hull.urdf',options);
-r = r.removeCollisionGroupsExcept({'heel','toe'});
+r = r.removeCollisionGroupsExcept({'heel','toe', 'midfoot', 'left_hand_robotiq', 'right_hand_robotiq'});
 r = compile(r);
 
 nq = getNumPositions(r);
@@ -38,10 +38,10 @@ opt = ContactImplicitFixedPointUnconstrainedProgram(r.getManipulator(), [], opti
 opt = opt.setSolverOptions('snopt','DerivativeOption', 0);
 opt = opt.setSolverOptions('snopt','VerifyLevel', 0);
 opt = opt.setSolverOptions('snopt','MajorOptimalityTolerance', 1E-5);
-opt = opt.setSolverOptions('snopt','SuperbasicsLimit', 1000);
+opt = opt.setSolverOptions('snopt','SuperbasicsLimit', 10000);
 opt = opt.setSolverOptions('snopt','print','snopt.out');
 
-opt = opt.addInputCost(QuadraticSumConstraint(0,0,0.01*eye(nu),zeros(nu,1)));
+opt = opt.addInputCost(QuadraticSumConstraint(0,0,1*eye(nu),zeros(nu,1)));
 % remove floating base fredom that we don't need
 opt = opt.addConstraint(ConstantConstraint(zeros(3,1)), opt.q_inds([1 2 6]));
 opt = opt.addConstraint(BoundingBoxConstraint(-0.1*ones(2,1), 0.1*ones(2,1)), opt.q_inds([4 5]));
