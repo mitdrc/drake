@@ -21,6 +21,7 @@ classdef ContactImplicitFixedPointUnconstrainedProgram < NonlinearProgram
     nJL % number of joint limits = length([jl_lb_ind;jl_ub_ind])
     
     nonlincompl_slack_inds % obj.nC of these
+    jlcompl_slack_inds % obj.nJL of these
     
     dynamics_scale = 0.1;
     nonlincompl_scale = 1.0;
@@ -28,6 +29,8 @@ classdef ContactImplicitFixedPointUnconstrainedProgram < NonlinearProgram
     lincompl_scale = 1.0;
     lincompl_slack_scale = 100.0;
     penetration_scale = 100.0;
+    jlcompl_scale = 1.0;
+    jlcompl_slack_scale = 100.0;
     
     
   end
@@ -128,6 +131,12 @@ classdef ContactImplicitFixedPointUnconstrainedProgram < NonlinearProgram
       obj.jl_ub_ind = find(jl_ub ~= inf);
       obj = obj.addDecisionVariable(obj.nJL);
       
+      % joint limit complementarity slacks
+      njlSlack = obj.nJL;
+      obj.jlcompl_slack_inds = reshape(obj.num_vars + (1:njlSlack), njlSlack, 1);
+      obj = obj.addDecisionVariable(njlSlack);
+      
+      
 
       obj = addDynamicConstraints(obj,x_dimensions_to_ignore);
       
@@ -175,15 +184,43 @@ classdef ContactImplicitFixedPointUnconstrainedProgram < NonlinearProgram
       if obj.nJL > 0
         % joint limit linear complementarity constraint
         % lambda_jl /perp [q - lb_jl; -q + ub_jl]
-        W_jl = zeros(obj.nJL);
-        [r_jl,M_jl] = jointLimitConstraints(obj.plant,zeros(nQ,1));
-        jlcompl_constraint = LinearComplementarityConstraint(W_jl,r_jl,M_jl,obj.options.lincc_mode,obj.options.jlcompl_slack);
-        'a constraint is sneaking in'
-        obj = obj.addConstraint(jlcompl_constraint,[obj.q_inds;obj.ljl_inds]);
+        % positivity of joint limits forces
+        obj = obj.addConstraint(BoundingBoxConstraint(zeros(obj.nJL,1), ones(obj.nJL,1)*Inf), [obj.ljl_inds]);
+        % joint limits themselves
+        [r_jl, M_jl] = jointLimitConstraints(obj.plant,zeros(nQ,1));
+        obj = obj.addConstraint(LinearConstraint(-r_jl(1:obj.nJL/2), r_jl((obj.nJL/2+1):end), M_jl(1:obj.nJL/2,:)), [obj.q_inds]);
+        % restoring force at joint limits with relaxed complementarity
+        jlcomplCost = FunctionHandleConstraint(0,0,nQ + obj.nJL + obj.nJL, @obj.jlcompl_fun);
+        obj = obj.addCost(jlcomplCost, {obj.q_inds; obj.ljl_inds; obj.jlcompl_slack_inds});
       end
       
     end
     
+    % joint limit complementarity constraints:
+    %   lambda_jl /perp [q - lb_jl; -q + ub_jl]
+    function [f,df] = jlcompl_fun(obj, q, lambda, slack)
+        nq = obj.plant.getNumPositions;
+        v = q*0;
+        
+        [r_jl,M_jl] = jointLimitConstraints(obj.plant,zeros(nq,1));
+        
+        f = 0;
+        df = zeros(1,nq+obj.nJL+obj.nJL);
+        
+        err = lambda .* (M_jl*q + r_jl) - slack;
+        
+        f = f + err.'*err;
+        df(1:nq) = df(1:nq) + 2 * err.' * (repmat(lambda, 1, nq) .* M_jl);
+        df(nq+1:nq+obj.nJL) = 2 * err.' * repmat(M_jl*q + r_jl, 1, obj.nJL);
+        df(nq+obj.nJL+1:end) = 2 * err.' * (-eye(obj.nJL));
+        
+        f = f * obj.jlcompl_scale;
+        df = df * obj.jlcompl_scale;
+        
+        % penalize slack
+        f = f + obj.jlcompl_slack_scale * (slack.'*slack);
+        df(nq+obj.nJL+1:end) = df(nq+obj.nJL+1:end) + obj.jlcompl_slack_scale*2*slack.';
+    end
     
     % nonlinear complementarity constraints:
     %   lambda_N /perp phi(q) -> lambda_N * phi(q) - slack = 0, penalized quadratically
