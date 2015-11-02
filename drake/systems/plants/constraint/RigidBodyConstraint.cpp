@@ -292,11 +292,11 @@ void PostureConstraint::setJointLimits(int num_idx,const int* joint_idx, const V
     }
 		if(lb[i]>this->robot->joint_limit_max[joint_idx[i]])
 		{
-			std::cerr<<"joint lb is greater than the robot default joint maximum"<<std::endl;
+			std::cerr<<"joint lb is greater than the robot default joint maximum for joint "<<i<<"/"<<num_idx<<std::endl;
 		}
 		if(ub[i]<this->robot->joint_limit_min[joint_idx[i]])
     {
-			std::cerr<<"joint ub is smaller than the robot default joint minimum"<<std::endl;
+			std::cerr<<"joint ub is smaller than the robot default joint minimum for joint "<<i<<"/"<<num_idx<<std::endl;
     }
 		this->lb[joint_idx[i]] = (this->robot->joint_limit_min[joint_idx[i]]<lb[i]?lb[i]:this->robot->joint_limit_min[joint_idx[i]]);
 		this->ub[joint_idx[i]] = (this->robot->joint_limit_max[joint_idx[i]]>ub[i]?ub[i]:this->robot->joint_limit_max[joint_idx[i]]);
