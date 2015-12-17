@@ -11,7 +11,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 
   //check number of arguments
   if (nrhs < 4) {
-    mexErrMsgIdAndTxt("Drake:collidingPointsmex:NotEnoughInputs", "Usage: colliding_points = collidingPoints(mex_model_ptr, cache_ptr, points, collision_threshold)");
+    mexErrMsgIdAndTxt("Drake:collidingPointsmex:NotEnoughInputs", "Usage: colliding_points = collidingPointsCheckOnly(mex_model_ptr, cache_ptr, points, collision_threshold)");
   }
 
   //check argument types
@@ -50,11 +50,11 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     points.push_back(point);
   }
   
-  vector<size_t> colliding_points = model->collidingPoints(*cache, points, collision_threshold);
-  transform(colliding_points.begin(), colliding_points.end(), colliding_points.begin(), bind2nd(plus<int>(), 1));
+  bool is_in_collision = model->collidingPointsCheckOnly(*cache, points, collision_threshold);
 
   if (nlhs>0) {
-    plhs[0] = mxCreateNumericMatrix(1,static_cast<int>(colliding_points.size()),mxUINT64_CLASS,mxREAL);
-    memcpy(mxGetData(plhs[0]),colliding_points.data(),sizeof(size_t)*static_cast<int>(colliding_points.size()));
+    plhs[0] = mxCreateLogicalScalar(false);
+    //plhs[0] = mxCreateLogicalScalar(is_in_collision);
+    memcpy((bool*)(mxGetPr(plhs[0])),& is_in_collision,sizeof(bool));
   }
 }
