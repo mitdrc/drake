@@ -6,14 +6,14 @@
 #include <string>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include "PiecewisePolynomial.h"
-#include "ExponentialPlusPiecewisePolynomial.h"
-#include "RigidBodyTree.h"
+#include "drake/systems/trajectories/PiecewisePolynomial.h"
+#include "drake/systems/trajectories/ExponentialPlusPiecewisePolynomial.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
 #include "BodyMotionData.h"
-#include "Side.h"
+#include "drake/systems/robotInterfaces/Side.h"
 #include <lcm/lcm-cpp.hpp>
-#include "zmpUtil.h"
+#include "drake/systems/controllers/zmpUtil.h"
  
 
 class QuadraticLyapunovFunction {
@@ -215,7 +215,7 @@ private:
 
   std::vector<Side> getSupportSides(const RigidBodySupportState &support_state) const;
 
-  void updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const KinematicsCache<double>& cache, const Eigen::VectorXd& v);
+  void updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const KinematicsCache<double>& cache);
 
   void updatePlanShift(const KinematicsCache<double>& cache, double t_plan, const std::vector<bool>& contact_force_detected, int support_index);
 

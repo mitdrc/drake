@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <cstdlib>
-#include "RigidBodyTree.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 
 using namespace std;
 
@@ -19,7 +19,7 @@ int main(int argc, char* argv[])
   }
 
   // run kinematics with second derivatives 100 times
-  Eigen::VectorXd q = Eigen::VectorXd::Zero(model->num_positions);
+  Eigen::VectorXd q = model->getZeroConfiguration();
   int i;
 
   if (argc>=2+model->num_positions) {

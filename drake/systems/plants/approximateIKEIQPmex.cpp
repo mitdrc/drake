@@ -5,14 +5,14 @@
 #include <set>
 #include <mex.h>
 #include <Eigen/Dense>
-#include "RigidBodyTree.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include <iostream>
 #include <Eigen/Cholesky>
 #include <Eigen/LU>
 #include <Eigen/SVD>
 
-#include "drakeUtil.h"
-#include "fastQP.h"
+#include "drake/util/drakeUtil.h"
+#include "drake/solvers/fastQP.h"
 
 #define USE_EIQUADPROG_BACKUP 1
 
@@ -265,7 +265,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   cout << "c is " << c.rows() << endl;
   cout << "Aeq is " << Aeq.rows() << " by " << Aeq.cols() << endl;
 
-  VectorXd q = VectorXd::Zero(nq);
+  VectorXd q = model->getZeroConfiguration();
 //   double result = solve_quadprog(Q, c, -Aeq, beq, -Ain, bin, q);
   
   VectorXd Qdiag = Q.diagonal();

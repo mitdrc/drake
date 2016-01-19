@@ -1,16 +1,11 @@
-include_directories (${PROJECT_SOURCE_DIR}/util tinyxml)
 # IMPORTANT NOTE!!
 # matlab has it's own boost libraries.  DO NOT let any mex file depend
 # on the system boost (directly nor indirectly), or you're asking for trouble.
 
-include_directories(joints)
-include_directories(${PROJECT_SOURCE_DIR}/solvers)
-include_directories(${PROJECT_SOURCE_DIR}/systems/controllers)
-include_directories(${PROJECT_SOURCE_DIR}/systems/trajectories)
-add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES RigidBodyTree.cpp RigidBody.cpp RigidBodyTreeURDF.cpp RigidBodyTreeContact.cpp tinyxml/tinyxml.cpp tinyxml/tinyxmlparser.cpp tinyxml/tinyxmlerror.cpp)
-target_link_libraries(drakeRBM drakeCollision drakeJoints spruce drakeUtil)
+add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES RigidBodyTree.cpp RigidBody.cpp RigidBodyTreeURDF.cpp RigidBodyTreeContact.cpp)
+target_link_libraries(drakeRBM drakeCollision drakeJoints spruce drakeUtil tinyxml2)
 pods_install_libraries(drakeRBM)
-pods_install_headers(RigidBodyTree.h RigidBody.h RigidBodyFrame.h KinematicPath.h KinematicsCache.h ForceTorqueMeasurement.h DESTINATION drake)
+drake_install_headers(RigidBodyTree.h RigidBody.h RigidBodyFrame.h KinematicPath.h KinematicsCache.h ForceTorqueMeasurement.h)
 pods_install_pkg_config_file(drake-rbm
   LIBS -ldrakeRBM -ldrakeCollision -ldrakeJoints -lspruce -ldrakeUtil
   REQUIRES
@@ -40,6 +35,8 @@ if (MATLAB_FOUND)
   add_rbm_mex(smoothDistancePenaltymex)
   add_rbm_mex(collisionRaycastmex)
   add_rbm_mex(allCollisionsmex)
+  add_rbm_mex(collidingPointsmex)
+  add_rbm_mex(collidingPointsCheckOnlymex)
   add_rbm_mex(findKinematicPathmex)
   add_rbm_mex(geometricJacobianmex)
   add_rbm_mex(doKinematicsmex)
@@ -74,7 +71,6 @@ if (MATLAB_FOUND)
   endif()
 endif(MATLAB_FOUND)
 
-include_directories( constraint )
 add_library_with_exports(LIB_NAME drakeIKoptions SOURCE_FILES IKoptions.cpp)
 target_link_libraries(drakeIKoptions drakeRBM)
 
@@ -109,7 +105,7 @@ if (drakeIK_SRC_FILES)
   set_target_properties(drakeIK PROPERTIES COMPILE_FLAGS -fPIC)
   pods_install_libraries(drakeIK)
   pods_install_libraries(drakeIKoptions)
-  pods_install_headers(RigidBodyIK.h IKoptions.h DESTINATION drake)
+  drake_install_headers(RigidBodyIK.h IKoptions.h)
   pods_install_pkg_config_file(drake-ik
     LIBS -ldrakeIK -ldrakeRigidBodyConstraint -ldrakeIKoptions
     REQUIRES drake-rbm
@@ -137,8 +133,12 @@ if (MATLAB_FOUND)
 endif(MATLAB_FOUND)
 
 if (LCM_FOUND AND snopt_c_FOUND)
-  add_executable(urdfLCMNode urdfLCMNode.cpp)
-  target_link_libraries(urdfLCMNode drakeRBM drakeLCMSystem drakeIK)
+  add_library_with_exports(LIB_NAME drakeRBSystem SOURCE_FILES RigidBodySystem.cpp)
+  target_link_libraries(drakeRBSystem drakeRBM drakeLCMSystem drakeIK)
+  pods_install_libraries(drakeRBSystem)
+
+  add_executable(urdfLCMNode urdfLCMNode.cpp joints/DrakeJoints.h)
+  target_link_libraries(urdfLCMNode drakeRBSystem)
   pods_install_executables(urdfLCMNode)
 endif (LCM_FOUND AND snopt_c_FOUND)
 

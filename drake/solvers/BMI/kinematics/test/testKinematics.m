@@ -1,10 +1,8 @@
 function testKinematics
 % test if my kinematics computation is the same as the one in doKinematics
 p = RigidBodyManipulator([getDrakePath,'/examples/IRB140/urdf/irb_140_robotiq_simple_ati.urdf'],struct('floating',true));
-nq = p.getNumPositions();
-nv = p.getNumVelocities();
-q = randn(nq,1);
-v = randn(nv,1);
+q = getRandomConfiguration(p);
+v = randn(p.getNumVelocities(),1);
 q(1:6) = 0;
 v(1:6) = 0;
 kinsol = p.doKinematics(q,v,struct('use_mex',false));
@@ -40,7 +38,7 @@ for i = 1:p.getNumBodies
       end
     else
       T_base = [rotmatFromQuatBilinear(body_Quat{i}) body_pos(:,i);0 0 0 1];
-      TJ = (bodyi.T_body_to_joint)/bodyi.Ttree*T_base/bodyi.T_body_to_joint;
+      TJ = bodyi.Ttree*T_base;
       if(norm(rotmat2rpy(TJ(1:3,1:3))-q(4:6))>1e-3)
         error('The rpy for the floating base is not correct');
       end

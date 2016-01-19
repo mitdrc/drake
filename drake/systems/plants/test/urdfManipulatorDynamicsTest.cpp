@@ -1,7 +1,7 @@
 
 #include <iostream>
 #include <Eigen/Dense>
-#include "RigidBodyTree.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 
 using namespace std;
 using namespace Eigen;
@@ -25,7 +25,7 @@ int main(int argc, char* argv[])
     cout << model->bodies[i]->linkname << endl;
   }
 
-  VectorXd q = VectorXd::Zero(model->num_positions);
+  VectorXd q = model->getZeroConfiguration();
   VectorXd v = VectorXd::Zero(model->num_velocities);
   int i;
 

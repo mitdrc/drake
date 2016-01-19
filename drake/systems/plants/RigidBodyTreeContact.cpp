@@ -1,4 +1,4 @@
-#include "RigidBodyTree.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include <iostream>
 
 using namespace Eigen;
@@ -134,7 +134,7 @@ void RigidBodyTree::accumulateContactJacobian(const KinematicsCache<Scalar> &cac
   const size_t numCB = cindB.size();
   const size_t offset = 3*numCA;
 
-  auto J_tmp = forwardKinJacobian(cache, bodyPoints, bodyInd, 0, 0, true);
+  auto J_tmp = transformPointsJacobian(cache, bodyPoints, bodyInd, 0, true);
 
   //add contributions from points in xA
   for (int x = 0 ; x < numCA ; x++) {

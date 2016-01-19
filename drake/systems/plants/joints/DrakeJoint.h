@@ -5,8 +5,8 @@
 #include <Eigen/Geometry>
 #include <unsupported/Eigen/AutoDiff>
 #include <random>
-#include "drakeGeometryUtil.h"
-#include <drakeJoints_export.h>
+#include "drake/util/drakeGeometryUtil.h"
+#include "drake/drakeJoints_export.h"
 
 
 #define POSITION_AND_VELOCITY_DEPENDENT_METHODS(Scalar) \
@@ -63,6 +63,8 @@ public:
   virtual std::string getVelocityName(int index) const { return getPositionName(index)+"dot"; }
 
   virtual bool isFloating() const { return false; }
+
+  virtual Eigen::VectorXd zeroConfiguration() const = 0;
 
   virtual Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const = 0;
 

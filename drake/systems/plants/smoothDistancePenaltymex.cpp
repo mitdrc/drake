@@ -1,7 +1,7 @@
 #include "mex.h"
 #include <iostream>
-#include "drakeMexUtil.h"
-#include "RigidBodyTree.h"
+#include "drake/util/drakeMexUtil.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include "math.h"
 #include "rigidBodyTreeMexConversions.h"
 
@@ -96,7 +96,7 @@ smoothDistancePenalty(double& c, MatrixXd& dc,
       //END_DEBUG
       x_k.col(l) = xB.col(orig_idx_of_pt_on_bodyB.at(k).at(l-numA));
     }
-    auto J_k = robot->forwardKinJacobian(cache, x_k, k, 0, 0, true);
+    auto J_k = robot->transformPointsJacobian(cache, x_k, k, 0, true);
     l = 0;
     for (; l < numA; ++l) {
       //DEBUG

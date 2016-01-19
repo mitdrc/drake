@@ -7,9 +7,9 @@
 #include <stdexcept>
 #include <lcm/lcm-cpp.hpp>
 #include "lcmtypes/drake/lcmt_drake_signal.hpp"
-#include "System.h"
-#include "Simulation.h"
-#include <drakeLCMSystem_export.h>
+#include "drake/systems/System.h"
+#include "drake/systems/Simulation.h"
+#include "drake/drakeLCMSystem_export.h"
 
 namespace Drake {
 
@@ -26,8 +26,8 @@ namespace Drake {
    */
 
 
-  template <template <typename> class Vector>
-  bool encode(const double& t, const Vector<double>& x, drake::lcmt_drake_signal& msg) {
+  template <class Vector>
+  bool encode(const double& t, const Vector& x, drake::lcmt_drake_signal& msg) {
     msg.timestamp = static_cast<int64_t>(t*1000);
     msg.dim = size(x);
     auto xvec = toEigen(x);
@@ -38,14 +38,14 @@ namespace Drake {
     return true;
   }
 
-  template <template <typename> class Vector>
-  bool decode(const drake::lcmt_drake_signal& msg, double& t, Vector<double>& x) {
+  template <class Vector>
+  bool decode(const drake::lcmt_drake_signal& msg, double& t, Vector& x) {
     t = double(msg.timestamp)/1000.0;
     std::unordered_map<std::string,double> m;
     for (int i=0; i<msg.dim; i++) {
       m[msg.coord[i]] = msg.val[i];
     }
-    Eigen::Matrix<double,Vector<double>::RowsAtCompileTime,1> xvec(msg.dim);
+    Eigen::Matrix<double,Vector::RowsAtCompileTime,1> xvec(msg.dim);
     for (int i=0; i<msg.dim; i++) {
       xvec(i) = m[getCoordinateName(x,i)];
     }
@@ -62,14 +62,18 @@ namespace Drake {
       template<typename ScalarType> using OutputVector = Vector<ScalarType>;
       const static bool has_lcm_input = false;
 
-      LCMInputSystem(const std::shared_ptr<lcm::LCM> &lcm) { };
+      template <typename System>
+      LCMInputSystem(const System& wrapped_sys, const std::shared_ptr<lcm::LCM> &lcm) : all_zeros(Eigen::VectorXd::Zero(getNumInputs(wrapped_sys))) { };
 
       StateVector<double> dynamics(const double &t, const StateVector<double> &x,
                                    const InputVector<double> &u) const { return StateVector<double>(); }
 
       OutputVector<double> output(const double &t, const StateVector<double> &x, const InputVector<double> &u) const {
-        return OutputVector<double>();
+        return all_zeros;
       }
+
+    private:
+      OutputVector<double> all_zeros;
     };
 
     template<template<typename> class Vector>
@@ -80,7 +84,8 @@ namespace Drake {
       template<typename ScalarType> using OutputVector = Vector<ScalarType>;
       const static bool has_lcm_input = true;
 
-      LCMInputSystem(const std::shared_ptr<lcm::LCM> &lcm) {
+      template <typename System>
+      LCMInputSystem(const System& sys, const std::shared_ptr<lcm::LCM> &lcm) {
         lcm::Subscription* sub = lcm->subscribe(Vector<double>::channel(),&LCMInputSystem<Vector>::handleMessage,this);
         sub->setQueueCapacity(1);
       };
@@ -88,7 +93,7 @@ namespace Drake {
 
       void handleMessage(const lcm::ReceiveBuffer* rbuf, const std::string& chan, const typename Vector<double>::LCMMessageType* msg) {
         data_mutex.lock();
-        decode<Vector>(*msg,timestamp,data);
+        decode(*msg,timestamp,data);
         data_mutex.unlock();
       }
 
@@ -177,7 +182,7 @@ namespace Drake {
       throw std::runtime_error("bad LCM reference");
 
 //    typename System::template OutputVector<double> x = 1;  // useful for debugging
-    auto lcm_input = std::make_shared<internal::LCMInputSystem<System::template InputVector> >(lcm);
+    auto lcm_input = std::make_shared<internal::LCMInputSystem<System::template InputVector> >(*sys,lcm);
     auto lcm_output = std::make_shared<internal::LCMOutputSystem<System::template OutputVector> >(lcm);
     auto lcm_sys = cascade(lcm_input,cascade(sys,lcm_output));
 
@@ -207,7 +212,7 @@ namespace Drake {
       }
 
       SimulationOptions lcm_options = options;
-      lcm_options.realtime_factor = 1.0;
+      if (lcm_options.realtime_factor<0.0) lcm_options.realtime_factor = 1.0;
       simulate(*lcm_sys, t0, tf, x0, lcm_options);
 
       if (has_lcm_input) {
