@@ -318,8 +318,8 @@
   <joint name="joint5" type="revolute">
     <parent link="link_4"/>
     <child link="link_5"/>
-    <limit effort="300" lower="-2.09439510" upper="2.09439510" velocity="5.58"/>
-    <axis xyz="0 0 -1"/>
+    <limit effort="300" lower="-1.74" upper="1.74" velocity="5.58"/>
+    <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.1615 0 0"/>
   </joint>
   <joint name="joint6" type="revolute">
