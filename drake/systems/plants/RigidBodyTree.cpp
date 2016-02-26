@@ -449,9 +449,10 @@ bool RigidBodyTree::collisionRaycast(const KinematicsCache<double>& cache,
                                      const Matrix3Xd& ray_endpoints,
                                      VectorXd& distances, bool use_margins) {
   Matrix3Xd normals;
-  updateDynamicCollisionElements(cache);
-  return collision_model_->collisionRaycast(origins, ray_endpoints, use_margins,
-                                           distances, normals);
+  std::vector<int> body_idx;
+  return collisionRaycast(cache, origins, ray_endpoints,
+                          distances, normals, 
+                          body_idx, use_margins);
 }
 
 bool RigidBodyTree::collisionRaycast(const KinematicsCache<double>& cache,
@@ -459,10 +460,39 @@ bool RigidBodyTree::collisionRaycast(const KinematicsCache<double>& cache,
                                      const Matrix3Xd& ray_endpoints,
                                      VectorXd& distances, Matrix3Xd& normals,
                                      bool use_margins) {
-  updateDynamicCollisionElements(cache);
-  return collision_model_->collisionRaycast(origins, ray_endpoints, use_margins,
-                                           distances, normals);
+  std::vector<int> body_idx;
+  return collisionRaycast(cache, origins, ray_endpoints, distances, normals, 
+                          body_idx, use_margins);
 }
+
+bool RigidBodyTree::collisionRaycast(const KinematicsCache<double>& cache,
+                                     const Matrix3Xd &origins,
+                                     const Matrix3Xd &ray_endpoints,
+                                     VectorXd &distances,
+                                     Matrix3Xd &normals,
+                                     std::vector<int>& body_idx,
+                                     bool use_margins )
+{
+  updateDynamicCollisionElements(cache);
+
+  std::vector<DrakeCollision::ElementId> collision_body;
+  bool ret = collision_model_->collisionRaycast(origins, ray_endpoints, 
+                     use_margins, distances, normals, collision_body);
+
+  body_idx.resize(collision_body.size());
+  for (size_t i = 0; i < collision_body.size(); i++){
+    if (distances[i] >= 0.0){
+      body_idx[i] = -1;
+    } else {
+      const DrakeCollision::Element* element = 
+             dynamic_cast<const DrakeCollision::Element*>(
+              collision_model_->readElement(collision_body[i]));
+      body_idx[i] = element->get_body()->get_body_index();
+    }
+  }
+  return ret;
+}
+
 
 bool RigidBodyTree::collisionDetect(
     const KinematicsCache<double>& cache, VectorXd& phi, Matrix3Xd& normal,

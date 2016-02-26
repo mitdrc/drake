@@ -717,13 +717,17 @@ void BulletModel::collisionDetectFromPoints(
     }
   }
 }
-
-bool BulletModel::collisionRaycast(const Matrix3Xd& origins,
-                                   const Matrix3Xd& ray_endpoints,
-                                   bool use_margins, VectorXd& distances,
-                                   Matrix3Xd& normals) {
-  distances.resize(ray_endpoints.cols());
-  normals.resize(3, ray_endpoints.cols());
+  
+bool BulletModel::collisionRaycast(const Matrix3Xd &origins, 
+                                   const Matrix3Xd &ray_endpoints, 
+                                   bool use_margins, VectorXd &distances, 
+                                   Matrix3Xd &normals,
+                                   std::vector<ElementId>& collision_body)
+{
+  
+  distances.resize(origins.cols());
+  normals.resize(3, origins.cols());
+  collision_body.resize(origins.cols());
 
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
 
@@ -788,16 +792,21 @@ bool BulletModel::collisionRaycast(const Matrix3Xd& origins,
       normals(0, i) = normal.getX();
       normals(1, i) = normal.getY();
       normals(2, i) = normal.getZ();
+
+      auto element = static_cast< Element*>(
+        ray_callback.m_collisionObject->getUserPointer());
+      collision_body[i] = element->getId();
     } else {
       distances(i) = -1.;
       normals(0, i) = 0.;
       normals(1, i) = 0.;
       normals(2, i) = 0.;
+      collision_body[i] = -1;
     }
   }
-
+  
   return true;
-}
+} 
 
 bool BulletModel::closestPointsAllToAll(
     const std::vector<ElementId>& ids_to_check, const bool use_margins,

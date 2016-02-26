@@ -93,7 +93,8 @@ class BulletModel : public Model {
   bool collisionRaycast(const Eigen::Matrix3Xd& origins,
                         const Eigen::Matrix3Xd& ray_endpoints, bool use_margins,
                         Eigen::VectorXd& distances,
-                        Eigen::Matrix3Xd& normals) override;
+                        Eigen::Matrix3Xd& normals,
+                        std::vector<ElementId>& collision_body) override;
 
   /** Computes the set of potential collision points for all
   eligible pairs of collision geometries in this model. This includes
