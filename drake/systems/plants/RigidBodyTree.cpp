@@ -433,6 +433,7 @@ void RigidBodyTree::collisionDetectFromPoints(
   body_x.resize(3, closest_points.size());
   normal.resize(3, closest_points.size());
   phi.resize(closest_points.size());
+  body_idx.resize(closest_points.size());
 
   for (size_t i = 0; i < closest_points.size(); ++i) {
     x.col(i) = closest_points[i].ptB;
