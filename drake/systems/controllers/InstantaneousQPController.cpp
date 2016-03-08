@@ -102,6 +102,7 @@ void InstantaneousQPController::loadConfigurationFromYAML(
                                 debug_file);
   rpc = parseKinematicTreeMetadata(control_config["kinematic_tree_metadata"],
                                    *robot);
+  input_joint_names = parseRobotJointNames(control_config["joint_names"], *robot);
 }
 
 void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot,
@@ -586,6 +587,29 @@ std::unordered_map<std::string, int> computeBodyOrFrameNameToIdMap(
   return id_map;
 }
 
+void InstantaneousQPController::resetControllerState(double t_new){
+  this->controller_state.t_prev = t_new;
+  this->controller_state.vref_integrator_state = VectorXd::Zero(this->controller_state.vref_integrator_state.size());
+  this->controller_state.q_integrator_state = VectorXd::Zero(this->controller_state.q_integrator_state.size());
+}
+
+const QPControllerParams& InstantaneousQPController::getParamSet(std::string param_set_name){
+  // look up the param set by name
+  std::map<std::string, QPControllerParams>::iterator it;
+  it = param_sets.find(param_set_name);
+  if (it == param_sets.end()) {
+    std::cout
+        << "Got a param set I don't recognize! Using standing params instead";
+    it = param_sets.find("standing");
+    if (it == param_sets.end()) {
+      throw std::runtime_error(
+          "Could not fall back to standing parameters either. I have to give "
+          "up here.");
+    }
+  }
+  return it->second;
+}
+
 int InstantaneousQPController::setupAndSolveQP(
     const drake::lcmt_qp_controller_input& qp_input,
     const DrakeRobotState& robot_state,
@@ -607,21 +631,8 @@ int InstantaneousQPController::setupAndSolveQP(
     dt = robot_state.t - controller_state.t_prev;
   }
 
-  // look up the param set by name
-  std::map<std::string, QPControllerParams>::iterator it;
-  it = param_sets.find(qp_input.param_set_name);
-  if (it == param_sets.end()) {
-    std::cout
-        << "Got a param set I don't recognize! Using standing params instead";
-    it = param_sets.find("standing");
-    if (it == param_sets.end()) {
-      throw std::runtime_error(
-          "Could not fall back to standing parameters either. I have to give "
-          "up here.");
-    }
-  }
   // cout << "using params set: " + it->first + ", ";
-  const QPControllerParams& params = it->second;
+  const QPControllerParams& params = this->getParamSet(qp_input.param_set_name);
   // mexPrintf("Kp_accel: %f, ", params.Kp_accel);
 
   int nu = robot->B.cols();

@@ -470,7 +470,7 @@ void evaluateXYZExpmapCubicSpline(double t,
   }
 }
 
-void getRobotJointIndexMap(JointNames *joint_names,
+void getRobotJointIndexMap(const JointNames *joint_names,
                            RobotJointIndexMap *joint_map) {
   if (joint_names->drake.size() != joint_names->robot.size()) {
     throw std::runtime_error(

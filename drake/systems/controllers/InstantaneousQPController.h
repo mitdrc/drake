@@ -54,7 +54,12 @@ class InstantaneousQPController {
           foot_force_torque_measurements,
       QPControllerOutput& qp_output, QPControllerDebugData* debug = NULL);
 
+  void resetControllerState(double t_new);
+
   const RigidBodyTree& getRobot() const { return *robot; }
+  const RobotPropertyCache& getRPC() const { return rpc; }
+  const QPControllerParams& getParamSet(const std::string param_set_name);
+  const JointNames& getJointNames() { return input_joint_names; }
 
   std::unordered_map<std::string, int> body_or_frame_name_to_id;
 
