@@ -105,6 +105,7 @@ void InstantaneousQPController::loadConfigurationFromYAML(
                                 debug_file);
   rpc = parseKinematicTreeMetadata(control_config["kinematic_tree_metadata"],
                                    *robot);
+  input_joint_names = parseRobotJointNames(control_config["joint_names"], *robot);
 }
 
 void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot,
@@ -582,6 +583,12 @@ std::unordered_map<std::string, int> computeBodyOrFrameNameToIdMap(
   return id_map;
 }
 
+void InstantaneousQPController::resetControllerState(double t_new){
+  this->controller_state.t_prev = t_new;
+  this->controller_state.vref_integrator_state = VectorXd::Zero(this->controller_state.vref_integrator_state.size());
+  this->controller_state.q_integrator_state = VectorXd::Zero(this->controller_state.q_integrator_state.size());
+}
+
 const QPControllerParams& InstantaneousQPController::FindParams(
     const std::string& param_set_name) {
   // look up the param set by name
@@ -597,10 +604,8 @@ const QPControllerParams& InstantaneousQPController::FindParams(
           "up here.");
     }
   }
-  // cout << "using params set: " + it->first + ", ";
-  const QPControllerParams& params = it->second;
-  // mexPrintf("Kp_accel: %f, ", params.Kp_accel);
-  return params;
+
+  return it->second;
 }
 
 int InstantaneousQPController::setupAndSolveQP(
