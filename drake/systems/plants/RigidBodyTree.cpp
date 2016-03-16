@@ -1711,7 +1711,7 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
 
     // Skips the current body if model_name is not empty and the body's model
     // name is not equal to the desired model name.
-    if (!model_name_lower.empty() && model_name_lower != current_model_name)
+    if (!model_name_lower.empty() && current_model_name != model_name_lower)
       continue;
 
     // Obtains a lower case version of the current body's name.
@@ -1722,7 +1722,12 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
     // Checks if the body names match. If so, checks whether this is the first
     // match. If so, it saves the current body's index. Otherwise it throws
     // an exception indicating there are multiple matches.
-    if (current_body_name == body_name_lower) {
+    // We only compare up to the length of the desired link's name,
+    // as the MATLAB parser still merges links with + signs if they are
+    // welded. This allows us to find the base link of a weld. 
+    // TODO(gizatt): Find non-root links in a weld with this search.
+    if (current_body_name.compare(0, body_name_lower.size(),
+                                  body_name_lower) == 0) {
       if (match_index < 0) {
         match_index = ii;
       } else {
