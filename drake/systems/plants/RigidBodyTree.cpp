@@ -1573,13 +1573,17 @@ shared_ptr<RigidBody> RigidBodyTree::findLink(std::string linkname,
   // linkname = std::regex_replace(linkname,linkname_connector,string("_"));
   int match = -1;
   for (int i = 0; i < bodies.size(); i++) {
-    // Note: unlike the MATLAB implementation, I don't have to handle the fixed
-    // joint names
+    // the C++ URDF parser does not generate link names with welded links
+    // connected, but the MATLAB parser still does, and those linknames
+    // might come in if these methods are called on a RBT that originated
+    // in MATLAB.
+    // For now this supports finding a link that things have been
+    // welded to, but it won't find the things that have been welded to it.
     string lower_linkname = bodies[i]->linkname;
     std::transform(lower_linkname.begin(), lower_linkname.end(),
                    lower_linkname.begin(),
                    ::tolower);                    // convert to lower case
-    if (lower_linkname.compare(linkname) == 0) {  // the names match
+    if (lower_linkname.compare(0, linkname.size(), linkname) == 0) {  // the names match
       if (robot == -1 ||
           bodies[i]->robotnum == robot) {  // it's the right robot
         if (match < 0) {                   // it's the first match
@@ -1608,13 +1612,17 @@ shared_ptr<RigidBody> RigidBodyTree::findLink(std::string linkname,
   // linkname = std::regex_replace(linkname,linkname_connector,string("_"));
   int match = -1;
   for (int i = 0; i < bodies.size(); i++) {
-    // Note: unlike the MATLAB implementation, I don't have to handle the fixed
-    // joint names
+    // the C++ URDF parser does not generate link names with welded links
+    // connected, but the MATLAB parser still does, and those linknames
+    // might come in if these methods are called on a RBT that originated
+    // in MATLAB.
+    // For now this supports finding a link that things have been
+    // welded to, but it won't find the things that have been welded to it.
     string lower_linkname = bodies[i]->linkname;
     std::transform(lower_linkname.begin(), lower_linkname.end(),
                    lower_linkname.begin(),
                    ::tolower);                    // convert to lower case
-    if (lower_linkname.compare(linkname) == 0) {  // the names match
+    if (lower_linkname.compare(0, linkname.size(), linkname) == 0) {  // the names match
       string lower_model_name = bodies[i]->model_name;
       std::transform(lower_model_name.begin(), lower_model_name.end(),
                      lower_model_name.begin(), ::tolower);
