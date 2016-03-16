@@ -286,8 +286,9 @@ InstantaneousQPController::loadAvailableSupports(
               Eigen::aligned_allocator<SupportStateElement>> available_supports;
   available_supports.resize(qp_input.num_support_data);
   for (int i = 0; i < qp_input.num_support_data; i++) {
+    // protect against received welded body names here by taking only up to the first +
     available_supports[i].body_idx =
-        body_or_frame_name_to_id.at(qp_input.support_data[i].body_name);
+        body_or_frame_name_to_id.at(qp_input.support_data[i].body_name.substr(0, qp_input.support_data[i].body_name.find('+')));
     for (int j = 0; j < 4; j++) {
       available_supports[i].support_logic_map[j] =
           qp_input.support_data[i].support_logic_map[j];

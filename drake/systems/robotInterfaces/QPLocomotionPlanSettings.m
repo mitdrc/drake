@@ -305,10 +305,13 @@ classdef QPLocomotionPlanSettings
         obj.D_control = -obj.robot.default_walking_params.nominal_LIP_COM_height / obj.g * eye(2);
       end
 
+      % todo: clean up for general robot.
+      % considering biped is a biped, not a humanoid, checking for hands doesn't make sense!
+      % pass in end-effector -> arm constraint logic in the options instead?
       for j = 1:num_bodies_to_track
-        if options.bodies_to_track(j) == biped.findLinkId('r_hand')
+        if options.bodies_to_track(j) == biped.findLinkId('r_hand', -1, -1)
           obj.constrained_dofs = setdiff(obj.constrained_dofs, findPositionIndices(obj.robot,'r_arm'));
-        elseif options.bodies_to_track(j) == biped.findLinkId('l_hand')
+        elseif options.bodies_to_track(j) == biped.findLinkId('l_hand', -1, -1)
           obj.constrained_dofs = setdiff(obj.constrained_dofs, findPositionIndices(obj.robot,'l_arm'));
         end
       end
