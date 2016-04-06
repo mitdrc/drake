@@ -27,6 +27,8 @@ class DRAKEJOINTS_EXPORT RevoluteJoint
 
   virtual ~RevoluteJoint() {}
 
+  const Eigen::Vector3d getRotationAxis() const { return rotation_axis; }
+
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
   jointTransform(const Eigen::MatrixBase<DerivedQ>& q) const {
