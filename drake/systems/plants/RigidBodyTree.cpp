@@ -228,7 +228,7 @@ void RigidBodyTree::compile(void) {
     body.set_contact_points(contact_points);
   }
 
-  initialized = true;
+  initialized_ = true;
 }
 
 Eigen::VectorXd RigidBodyTree::getZeroConfiguration() const {
