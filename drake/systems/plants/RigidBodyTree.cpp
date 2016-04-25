@@ -1583,13 +1583,15 @@ shared_ptr<RigidBody> RigidBodyTree::findLink(std::string linkname,
     std::transform(lower_linkname.begin(), lower_linkname.end(),
                    lower_linkname.begin(),
                    ::tolower);                    // convert to lower case
-    if (lower_linkname.compare(0, linkname.size(), linkname) == 0) {  // the names match
+    if (lower_linkname.compare(0, linkname.size(), linkname) == 0 
+        && (lower_linkname.size() <= linkname.size() || lower_linkname[linkname.size()] == '+')) {  // the names match
       if (robot == -1 ||
           bodies[i]->robotnum == robot) {  // it's the right robot
         if (match < 0) {                   // it's the first match
           match = i;
         } else {
           cerr << "found multiple links named " << linkname << endl;
+          cerr << "names are " << linkname << " and " << lower_linkname << endl;
           return nullptr;
         }
       }
@@ -1622,7 +1624,8 @@ shared_ptr<RigidBody> RigidBodyTree::findLink(std::string linkname,
     std::transform(lower_linkname.begin(), lower_linkname.end(),
                    lower_linkname.begin(),
                    ::tolower);                    // convert to lower case
-    if (lower_linkname.compare(0, linkname.size(), linkname) == 0) {  // the names match
+    if (lower_linkname.compare(0, linkname.size(), linkname) == 0 
+        && (lower_linkname.size() <= linkname.size() || lower_linkname[linkname.size()] == '+')) {  // the names match
       string lower_model_name = bodies[i]->model_name;
       std::transform(lower_model_name.begin(), lower_model_name.end(),
                      lower_model_name.begin(), ::tolower);
