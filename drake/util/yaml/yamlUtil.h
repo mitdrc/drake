@@ -21,6 +21,9 @@ std::map<std::string, QPControllerParams> loadAllParamSets(
 std::map<std::string, QPControllerParams> loadAllParamSets(
     YAML::Node config, const RigidBodyTree& robot,
     std::ofstream& debug_output_file);
+
+std::map<std::string, QPControllerParams> loadAllParamSets(
+    YAML::Node config, std::string robotURDFRelativeToDrake);
 RobotPropertyCache parseKinematicTreeMetadata(const YAML::Node& metadata,
                                               const RigidBodyTree& robot);
 KinematicModifications parseKinematicModifications(const YAML::Node& mods);

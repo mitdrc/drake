@@ -1,4 +1,5 @@
 #include "yamlUtil.h"
+#include "drake/Path.h"
 // #include <regex>
 
 using namespace std;
@@ -360,6 +361,17 @@ std::map<std::string, QPControllerParams> loadAllParamSets(
   debug_output_file << config;
   return loadAllParamSetsFromExpandedConfig(config, robot);
 }
+
+
+// add method for loading param sets using just a urdf, construct robot internally
+std::map<std::string, QPControllerParams> loadAllParamSets(
+    YAML::Node config, std::string robotURDFRelativeToDrake) {
+
+  std::string urdfFilename = Drake::getDrakePath() + robotURDFRelativeToDrake;
+  RigidBodyTree robot(urdfFilename);
+  return loadAllParamSets(config, robot);
+}
+
 
 vector<int> findPositionIndices(const RigidBodyTree& robot,
                                 const vector<string>& joint_names) {
