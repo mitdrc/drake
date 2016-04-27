@@ -364,12 +364,20 @@ std::map<std::string, QPControllerParams> loadAllParamSets(
 
 
 // add method for loading param sets using just a urdf, construct robot internally
-std::map<std::string, QPControllerParams> loadAllParamSets(
+std::pair<std::map<std::string, int>, std::map<std::string, QPControllerParams>> loadAllParamSets(
     YAML::Node config, std::string robotURDFRelativeToDrake) {
 
   std::string urdfFilename = Drake::getDrakePath() + robotURDFRelativeToDrake;
   RigidBodyTree robot(urdfFilename);
-  return loadAllParamSets(config, robot);
+  std::map<std::string, int> position_name_to_index = 
+  robot.computePositionNameToIndexMap();
+
+  std::map<std::string, QPControllerParams> paramSets = loadAllParamSets(config, robot);
+
+  std::pair<std::map<std::string, int>, std::map<std::string, QPControllerParams>>
+   returnPair(position_name_to_index, paramSets);
+
+  return returnPair;
 }
 
 
