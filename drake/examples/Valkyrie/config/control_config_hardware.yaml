@@ -85,7 +85,7 @@ qp_controller_params:
       DEFAULT:
         Kp: 150
         damping_ratio: 0.6
-        w_qdd: 0.001
+        w_qdd: 0.01 # Lucas increased this as a test
         integrator:
           gain: 0
           clamp: 0
@@ -157,6 +157,19 @@ qp_controller_params:
           ff_f_d: 1
           ff_const: 0
           ff_qd_d: 0
+
+      upperNeckPitch:
+        hardware:
+          joint_is_force_controlled: false
+          joint_is_position_controlled: true
+      lowerNeckPitch:
+        hardware:
+          joint_is_force_controlled: false
+          joint_is_position_controlled: true
+      neckYaw:
+        hardware:
+          joint_is_force_controlled: false
+          joint_is_position_controlled: true
 
   base: # automatically inherits from the default =
   standing:
