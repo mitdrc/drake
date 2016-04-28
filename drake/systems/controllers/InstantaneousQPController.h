@@ -70,6 +70,7 @@ class InstantaneousQPController {
   RobotPropertyCache rpc;
   Eigen::VectorXd umin, umax;
   int use_fast_qp;
+  int numFloatingBaseJoints;
   JointNames input_joint_names;
 
   KinematicsCache<double> cache;
