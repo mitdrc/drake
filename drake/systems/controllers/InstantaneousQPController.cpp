@@ -831,7 +831,7 @@ int InstantaneousQPController::setupAndSolveQP(
 
   // TODO: fixed base
   // same for these as for the H ones
-  C_float = C.head<numFloatingBaseJoints>();
+  C_float = C.head(numFloatingBaseJoints);
   C_act = C.tail(nu);
 
   bool include_angular_momentum = (params.W_kdot.array().maxCoeff() > 1e-10);
