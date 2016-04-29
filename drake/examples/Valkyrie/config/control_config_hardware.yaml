@@ -411,6 +411,245 @@ qp_controller_params:
     contact_threshold: 0.001
     Kp_accel: 0
 
+
+    streaming_force_control:
+    input_specific:
+      DEFAULT:
+        hardware:
+          joint_is_force_controlled: false
+          joint_is_position_controlled: true
+          k_f_p: 0
+          k_q_p: 1
+          k_q_i: 0
+          k_qd_p: 0
+          ff_qd: 0
+          ff_f_d: 0
+          ff_const: 0
+          ff_qd_d: 0
+
+      torsoYaw:
+        hardware:
+          k_q_p: 100
+
+      waistPitchActuator:
+        hardware:
+          k_q_p: 800
+
+      waistRollActuator:
+        hardware:
+          k_q_p: 800
+
+      lowerNeckPitch:
+        hardware:
+          k_q_p: 30
+
+      neckYaw:
+        hardware:
+          k_q_p: 30
+
+      upperNeckPitch:
+        hardware:
+          k_q_p: 30
+
+      rightShoulderPitch:
+        hardware:
+          k_q_p: 100
+
+      rightShoulderRoll:
+        hardware:
+          k_q_p: 100
+
+      rightShoulderYaw:
+        hardware:
+          k_q_p: 50
+
+      rightElbowPitch:
+        hardware:
+          k_q_p: 50
+
+      rightForearmYaw:
+        hardware:
+          k_q_p: 30
+
+      rightWristRollActuator:
+        hardware:
+          k_q_p: 30
+
+      rightWristPitchActuator:
+        hardware:
+          k_q_p: 30
+
+      rightHipYaw:
+        hardware:
+          k_q_p: 50
+
+      rightHipRoll:
+        hardware:
+          k_q_p: 100
+
+      rightHipPitch:
+        hardware:
+          k_q_p: 200
+
+      rightKneePitch:
+        hardware:
+          k_q_p: 50
+
+      rightAnklePitchActuator:
+        hardware:
+          k_q_p: 30
+
+      rightAnkleRollActuator:
+        hardware:
+          k_q_p: 30
+
+      # copy for the left
+      leftShoulderPitch:
+        hardware:
+          k_q_p: 100
+
+      leftShoulderRoll:
+        hardware:
+          k_q_p: 100
+
+      leftShoulderYaw:
+        hardware:
+          k_q_p: 50
+
+      leftElbowPitch:
+        hardware:
+          k_q_p: 50
+
+      leftForearmYaw:
+        hardware:
+          k_q_p: 30
+
+      leftWristRollActuator:
+        hardware:
+          k_q_p: 30
+
+      leftWristPitchActuator:
+        hardware:
+          k_q_p: 30
+
+      leftHipYaw:
+        hardware:
+          k_q_p: 50
+
+      leftHipRoll:
+        hardware:
+          k_q_p: 100
+
+      leftHipPitch:
+        hardware:
+          k_q_p: 200
+
+      leftKneePitch:
+        hardware:
+          k_q_p: 50
+
+      leftAnklePitchActuator:
+        hardware:
+          k_q_p: 30
+
+      leftAnkleRollActuator:
+        hardware:
+          k_q_p: 30
+  manip:
+    body_specific:
+      *L_HAND_NAME :
+        weight: 0.001
+      *R_HAND_NAME :
+        weight: 0.001
+
+  walking:
+    body_specific:
+      DEFAULT:
+        weight: 0.001
+      *PELVIS_NAME :
+        Kp: {x: 0, y: 0, z: 150, wx: 200, wy: 200, wz: 200}
+        weight: 0.075
+      *R_FOOT_NAME :
+        Kp: {x: 100, y: 100, z: 100, wx: 150, wy: 150, wz: 150}
+        damping_ratio: 0.5
+        weight: 0.001
+      *L_FOOT_NAME :
+        Kp: {x: 100, y: 100, z: 100, wx: 150, wy: 150, wz: 150}
+        damping_ratio: 0.5
+        weight: 0.001
+    position_specific:
+      DEFAULT:
+        w_qdd: 0
+        damping_ratio: 0.5
+      rightHipYaw: {w_qdd: 1e-6, damping_ratio: 0.5}
+      rightHipRoll: {w_qdd: 1e-6, damping_ratio: 0.5}
+      rightHipPitch: {w_qdd: 1e-6, damping_ratio: 0.5}
+      rightKneePitch: {w_qdd: 1e-6, damping_ratio: 0.5}
+      rightAnklePitch: {w_qdd: 1e-6, damping_ratio: 0.5}
+      rightAnkleRoll: {w_qdd: 1e-6, damping_ratio: 0.5}
+      leftHipYaw: {w_qdd: 1e-6, damping_ratio: 0.5}
+      leftHipRoll: {w_qdd: 1e-6, damping_ratio: 0.5}
+      leftHipPitch: {w_qdd: 1e-6, damping_ratio: 0.5}
+      leftKneePitch: {w_qdd: 1e-6, damping_ratio: 0.5}
+      leftAnklePitch: {w_qdd: 1e-6, damping_ratio: 0.5}
+      leftAnkleRoll: {w_qdd: 1e-6, damping_ratio: 0.5}
+      torsoRoll:
+        w_qdd: 0.1
+        Kp: 50
+        damping_ratio: 0.5
+      torsoPitch:
+        w_qdd: 1e-4
+        damping_ratio: 0.5
+      torsoYaw:
+        w_qdd: 1e-4
+        damping_ratio: 0.5
+    contact_threshold: 0.001
+    Kp_accel: 0
+
+  recovery:
+    body_specific:
+      DEFAULT:
+        weight: 0.001
+      *PELVIS_NAME :
+        Kp: {x: 0, y: 0, z: 150, wx: 200, wy: 200, wz: 200}
+        weight: 0.075
+      *R_FOOT_NAME :
+        Kp: {x: 1000, y: 1000, z: 1000, wx: 1500, wy: 1500, wz: 1500}
+        damping_ratio: 0.5
+        weight: 0.001
+      *L_FOOT_NAME :
+        Kp: {x: 1000, y: 1000, z: 1000, wx: 1500, wy: 1500, wz: 1500}
+        damping_ratio: 0.5
+        weight: 0.001
+    position_specific:
+      DEFAULT:
+        w_qdd: 0
+        damping_ratio: 0.5
+      rightHipYaw: {w_qdd: 1e-6, damping_ratio: 0.5}
+      rightHipRoll: {w_qdd: 1e-6, damping_ratio: 0.5}
+      rightHipPitch: {w_qdd: 1e-6, damping_ratio: 0.5}
+      rightKneePitch: {w_qdd: 1e-6, damping_ratio: 0.5}
+      rightAnklePitch: {w_qdd: 1e-6, damping_ratio: 0.5}
+      rightAnkleRoll: {w_qdd: 1e-6, damping_ratio: 0.5}
+      leftHipYaw: {w_qdd: 1e-6, damping_ratio: 0.5}
+      leftHipRoll: {w_qdd: 1e-6, damping_ratio: 0.5}
+      leftHipPitch: {w_qdd: 1e-6, damping_ratio: 0.5}
+      leftKneePitch: {w_qdd: 1e-6, damping_ratio: 0.5}
+      leftAnklePitch: {w_qdd: 1e-6, damping_ratio: 0.5}
+      leftAnkleRoll: {w_qdd: 1e-6, damping_ratio: 0.5}
+      torsoRoll:
+        w_qdd: 0.1
+        Kp: 50
+        damping_ratio: 0.5
+      torsoPitch:
+        w_qdd: 1e-4
+        damping_ratio: 0.5
+      torsoYaw:
+        w_qdd: 1e-4
+        damping_ratio: 0.5
+    contact_threshold: 0.001
+    Kp_accel: 0
+
 ######################## position control #########################
   position_control:
     position_specific:
@@ -511,5 +750,4 @@ qp_controller_params:
         Kp: {x: 0, y: 0, z: 0, wx: 0, wy: 0, wz: 0}
         damping_ratio: 0
 
-######################## streaming ##################################
 
