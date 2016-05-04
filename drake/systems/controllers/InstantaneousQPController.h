@@ -60,6 +60,7 @@ class InstantaneousQPController {
   const RobotPropertyCache& getRPC() const { return rpc; }
   const QPControllerParams& getParamSet(const std::string param_set_name);
   const JointNames& getJointNames() { return input_joint_names; }
+  const QPControllerState& getControllerState() { return controller_state; }
 
   std::unordered_map<std::string, int> body_or_frame_name_to_id;
 
