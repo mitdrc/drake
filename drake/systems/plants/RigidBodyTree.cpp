@@ -227,7 +227,7 @@ void RigidBodyTree::compile(void) {
     getTerrainContactPoints(body, &contact_points);
     body.set_contact_points(contact_points);
   }
-
+  
   initialized_ = true;
 }
 
@@ -485,10 +485,17 @@ bool RigidBodyTree::collisionRaycast(const KinematicsCache<double>& cache,
     if (distances[i] >= 0.0){
       body_idx[i] = -1;
     } else {
+<<<<<<< HEAD
       const DrakeCollision::Element* element = 
              dynamic_cast<const DrakeCollision::Element*>(
               collision_model_->readElement(collision_body[i]));
       body_idx[i] = element->get_body()->get_body_index();
+=======
+      const RigidBody::CollisionElement* element = 
+             dynamic_cast<const RigidBody::CollisionElement*>(
+              collision_model->readElement(collision_body[i]));
+      body_idx[i] = element->getBody().body_index;
+>>>>>>> Post-rebase fix to RigidBodyTree RigidBody access
     }
   }
   return ret;
