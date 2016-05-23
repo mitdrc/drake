@@ -4,6 +4,8 @@
 #include "QPCommon.h"
 #include "drake/solvers/gurobi_qp.h"
 #include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
+#include "lcmtypes/drake/lcmt_qp_controller_input_new.hpp"
+
 
 #define INSTQP_USE_FASTQP 1
 #define INSTQP_GUROBI_OUTPUTFLAG 0
@@ -46,7 +48,7 @@ class InstantaneousQPController {
   }
 
   int setupAndSolveQP(
-      const drake::lcmt_qp_controller_input& qp_input,
+      const drake::lcmt_qp_controller_input_new& qp_input,
       const DrakeRobotState& robot_state,
       const Eigen::Ref<const Eigen::Matrix<bool, Eigen::Dynamic, 1>>&
           contact_detected,
@@ -63,10 +65,11 @@ class InstantaneousQPController {
   const QPControllerState& getControllerState() { return controller_state; }
 
   std::unordered_map<std::string, int> body_or_frame_name_to_id;
+  std::unique_ptr<RigidBodyTree> robot;
 
  private:
   GRBenv* env;
-  std::unique_ptr<RigidBodyTree> robot;
+
   std::map<std::string, QPControllerParams> param_sets;
   RobotPropertyCache rpc;
   Eigen::VectorXd umin, umax;
@@ -101,7 +104,8 @@ class InstantaneousQPController {
   PIDOutput wholeBodyPID(double t, const Eigen::Ref<const Eigen::VectorXd>& q,
                          const Eigen::Ref<const Eigen::VectorXd>& qd,
                          const Eigen::Ref<const Eigen::VectorXd>& q_des,
-                         const WholeBodyParams& params);
+                         const Eigen::Ref<const Eigen::VectorXd>& qdot_des,
+                         const WholeBodyParams& params, bool hasFloatingBase=true);
 
   Eigen::VectorXd velocityReference(
       double t, const Eigen::Ref<const Eigen::VectorXd>& q,
@@ -111,7 +115,7 @@ class InstantaneousQPController {
 
   std::vector<SupportStateElement,
               Eigen::aligned_allocator<SupportStateElement>>
-  loadAvailableSupports(const drake::lcmt_qp_controller_input& qp_input);
+  loadAvailableSupports(const drake::lcmt_qp_controller_input_new& qp_input);
 
   void estimateCoMBasedOnMeasuredZMP(
       const QPControllerParams& params,

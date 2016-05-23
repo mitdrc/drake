@@ -147,7 +147,8 @@ double logisticSigmoid(double L, double k, double x, double x0) {
 
 PIDOutput InstantaneousQPController::wholeBodyPID(
     double t, const Ref<const VectorXd>& q, const Ref<const VectorXd>& qd,
-    const Ref<const VectorXd>& q_des, const WholeBodyParams& params) {
+    const Ref<const VectorXd>& q_des, const Ref<const VectorXd>& qdot_des, const WholeBodyParams& params,
+bool hasFloatingBase) {
   // Run a PID controller on the whole-body state to produce desired
   // accelerations and reference posture
   PIDOutput out;
@@ -156,6 +157,7 @@ PIDOutput InstantaneousQPController::wholeBodyPID(
   DRAKE_ASSERT(q.size() == nq);
   DRAKE_ASSERT(qd.size() == robot->number_of_velocities());
   DRAKE_ASSERT(q_des.size() == params.integrator.gains.size());
+  DRAKE_ASSERT(qdot_des.size() == robot->number_of_velocities());
   if (nq != robot->number_of_velocities()) {
     throw std::runtime_error(
         "this function will need to be rewritten when num_pos != num_vel");
@@ -187,11 +189,28 @@ PIDOutput InstantaneousQPController::wholeBodyPID(
 
   VectorXd err_q;
   err_q.resize(nq);
-  err_q.head<3>() = q_des.head<3>() - q.head<3>();
-  for (int j = 3; j < nq; j++) {
+
+  VectorXd err_qd;
+  err_qd.resize(nq); // not this is assuming nv == nq for now
+
+  // make sure we do the angleDiff thing on all the joints if there is no floating base
+  int numBasePositions;
+  if (hasFloatingBase){
+    numBasePositions = 3;
+  }
+  else{
+    numBasePositions = 0;
+  }
+  // this is assuming a floating base here
+  err_q.head(numBasePositions) = q_des.head(numBasePositions) - q.head(numBasePositions);
+  for (int j = numBasePositions; j < nq; j++) {
     err_q(j) = angleDiff(q(j), q_des(j));
   }
-  out.qddot_des = params.Kp.cwiseProduct(err_q) - params.Kd.cwiseProduct(qd);
+
+  // velocity error, use this when doing the PD law
+  err_qd = qdot_des - qd;
+
+  out.qddot_des = params.Kp.cwiseProduct(err_q) - params.Kd.cwiseProduct(err_qd);
   out.qddot_des = out.qddot_des.array().max(params.qdd_bounds.min.array());
   out.qddot_des = out.qddot_des.array().min(params.qdd_bounds.max.array());
   return out;
@@ -282,7 +301,7 @@ VectorXd InstantaneousQPController::velocityReference(
 
 std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement>>
 InstantaneousQPController::loadAvailableSupports(
-    const drake::lcmt_qp_controller_input& qp_input) {
+    const drake::lcmt_qp_controller_input_new& qp_input) {
   // Parse a qp_input LCM message to extract its available supports as a vector
   // of SupportStateElements
   std::vector<SupportStateElement,
@@ -610,7 +629,7 @@ const QPControllerParams& InstantaneousQPController::FindParams(
 }
 
 int InstantaneousQPController::setupAndSolveQP(
-    const drake::lcmt_qp_controller_input& qp_input,
+    const drake::lcmt_qp_controller_input_new& qp_input,
     const DrakeRobotState& robot_state,
     const Ref<const Matrix<bool, Dynamic, 1>>& contact_detected,
     const std::map<Side, ForceTorqueMeasurement>&
@@ -635,6 +654,7 @@ int InstantaneousQPController::setupAndSolveQP(
   int nu = robot->B.cols();
   int nq = robot->number_of_positions();
   numFloatingBaseJoints = nq - nu;
+  bool hasFloatingBase = numFloatingBaseJoints==0;
 
   // zmp_data
   Map<const Matrix<double, 4, 4, RowMajor>> A_ls(&qp_input.zmp_data.A[0][0]);
@@ -664,7 +684,14 @@ int InstantaneousQPController::setupAndSolveQP(
   if (qp_input.whole_body_data.num_positions != nq)
     throw std::runtime_error(
         "number of positions doesn't match num_dof for this robot");
-  Map<const VectorXd> q_des(qp_input.whole_body_data.q_des.data(), nq);
+
+  // decode the Piecewise polynomial corresponding to the qtraj
+  auto qtrajSpline = decodePiecewisePolynomial(qp_input.whole_body_data.spline);
+  VectorXd q_des = qtrajSpline.value(robot_state.t);
+  auto qtrajSplineDeriv = qtrajSpline.derivative();
+  VectorXd qdot_des = qtrajSplineDeriv.value(robot_state.t);
+
+//  Map<const VectorXd> q_des(qp_input.whole_body_data.q_des.data(), nq);
   if (static_cast<int32_t>(qp_input.whole_body_data.constrained_dofs.size()) !=
       qp_input.whole_body_data.num_constrained_dofs) {
     throw std::runtime_error(
@@ -673,8 +700,9 @@ int InstantaneousQPController::setupAndSolveQP(
   Map<const VectorXi> condof(qp_input.whole_body_data.constrained_dofs.data(),
                              qp_input.whole_body_data.num_constrained_dofs);
 
+
   PIDOutput pid_out = wholeBodyPID(robot_state.t, robot_state.q, robot_state.qd,
-                                   q_des, params.whole_body);
+                                   q_des, qdot_des, params.whole_body, hasFloatingBase);
   VectorXd w_qdd = params.whole_body.w_qdd;
 
   auto joint_pd_override = qp_input.joint_pd_override;
