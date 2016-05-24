@@ -301,7 +301,7 @@ VectorXd InstantaneousQPController::velocityReference(
 
 std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement>>
 InstantaneousQPController::loadAvailableSupports(
-    const drake::lcmt_qp_controller_input_new& qp_input) {
+    const drake::lcmt_qp_controller_input& qp_input) {
   // Parse a qp_input LCM message to extract its available supports as a vector
   // of SupportStateElements
   std::vector<SupportStateElement,
@@ -629,7 +629,7 @@ const QPControllerParams& InstantaneousQPController::FindParams(
 }
 
 int InstantaneousQPController::setupAndSolveQP(
-    const drake::lcmt_qp_controller_input_new& qp_input,
+    const drake::lcmt_qp_controller_input& qp_input,
     const DrakeRobotState& robot_state,
     const Ref<const Matrix<bool, Dynamic, 1>>& contact_detected,
     const std::map<Side, ForceTorqueMeasurement>&
