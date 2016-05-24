@@ -691,6 +691,9 @@ int InstantaneousQPController::setupAndSolveQP(
   auto qtrajSplineDeriv = qtrajSpline.derivative();
   VectorXd qdot_des = qtrajSplineDeriv.value(robot_state.t);
 
+  qp_output.q_des = q_des;
+  qp_output.qdot_des = qdot_des;
+
 //  Map<const VectorXd> q_des(qp_input.whole_body_data.q_des.data(), nq);
   if (static_cast<int32_t>(qp_input.whole_body_data.constrained_dofs.size()) !=
       qp_input.whole_body_data.num_constrained_dofs) {
