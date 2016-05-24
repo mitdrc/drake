@@ -200,13 +200,13 @@ bool hasFloatingBase) {
   // this is assuming a floating base here
   err_q.head(numBasePositions) = q_des.head(numBasePositions) - q.head(numBasePositions);
   for (int j = numBasePositions; j < nq; j++) {
-    err_q(j) = angleDiff(q(j), q_des(j));
+    err_q(j) = angleDiff(q(j), q_des(j)); // this is really q_des - q, see angleDiff code
   }
 
   // velocity error, use this when doing the PD law
   err_qd = qdot_des - qd;
 
-  out.qddot_des = params.Kp.cwiseProduct(err_q) - params.Kd.cwiseProduct(err_qd);
+  out.qddot_des = params.Kp.cwiseProduct(err_q) + params.Kd.cwiseProduct(err_qd);
   out.qddot_des = out.qddot_des.array().max(params.qdd_bounds.min.array());
   out.qddot_des = out.qddot_des.array().min(params.qdd_bounds.max.array());
   return out;
