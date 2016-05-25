@@ -686,6 +686,7 @@ void BulletModel::collisionDetectFromPoints(
       shapeB = dynamic_cast<btConvexShape*>(bt_objB->getCollisionShape());
 
       btGjkEpaPenetrationDepthSolver epa;
+
       btVoronoiSimplexSolver sGjkSimplexSolver;
       sGjkSimplexSolver.setEqualVertexThreshold(0.f);
       btGjkPairDetector convexConvex(&shapeA, shapeB, &sGjkSimplexSolver, &epa);
@@ -700,12 +701,9 @@ void BulletModel::collisionDetectFromPoints(
       btVector3 pointOnAinWorld(points(0, i), points(1, i), points(2, i));
       btVector3 pointOnBinWorld = gjkOutput.m_pointInWorld;
 
-      btScalar distance =
-          gjkOutput.m_normalOnBInWorld.dot(pointOnAinWorld - pointOnBinWorld);
-
-      if (gjkOutput.m_hasResult && (!got_one || distance < phi[i])) {
+      if (gjkOutput.m_hasResult && (!got_one || gjkOutput.m_distance < phi[i])) {
         btVector3 pointOnElemB = input.m_transformB.invXform(pointOnBinWorld);
-        phi[i] = distance;
+        phi[i] = gjkOutput.m_distance;
         got_one = true;
         Element* collision_element =
             static_cast<Element*>(bt_objB->getUserPointer());
@@ -714,7 +712,8 @@ void BulletModel::collisionDetectFromPoints(
                       elements[bt_objB_iter->first]->getLocalTransform()*
                          toVector3d(pointOnElemB),
                       toVector3d(pointOnBinWorld),
-                      toVector3d(gjkOutput.m_normalOnBInWorld), distance);
+                      toVector3d(gjkOutput.m_normalOnBInWorld), 
+                                 gjkOutput.m_distance);
       }
     }
   }
