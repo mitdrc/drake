@@ -441,7 +441,7 @@ void RigidBodyTree::collisionDetectFromPoints(
     normal.col(i) = closest_points[i].normal;
     phi[i] = closest_points[i].distance;
     const DrakeCollision::Element* elementB = closest_points[i].elementB;
-    body_idx.push_back(elementB->get_body()->get_body_index());
+    body_idx[i] = elementB->get_body()->get_body_index();
   }
 }
 
@@ -1711,7 +1711,6 @@ RigidBodyTree::relativeRollPitchYawJacobianDotTimesV(
   return ret;
 }
 
-<<<<<<< HEAD
 RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
                                    const std::string& model_name,
                                    int model_instance_id) const {
@@ -1754,109 +1753,30 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
     // Checks if the body names match. If so, checks whether this is the first
     // match. If so, it saves the current body's index. Otherwise it throws
     // an exception indicating there are multiple matches.
-    // We only compare up to the length of the desired link's name,
-    // as the MATLAB parser still merges links with + signs if they are
-    // welded. This allows us to find the base link of a weld. 
-    // TODO(gizatt): Find non-root links in a weld with this search.
-    if (current_body_name.compare(0, body_name_lower.size(),
-                                  body_name_lower) == 0) {
-      if (match_index < 0) {
-        match_index = ii;
-      } else {
-        throw std::logic_error(
-            "RigidBodyTree::FindBody: ERROR: found multiple bodys named \"" +
-            body_name + "\", model name = \"" + model_name +
-            "\", model intsance id = " + std::to_string(model_instance_id) +
-            ".");
-=======
-RigidBody* RigidBodyTree::findLink(std::string name, int robot) const {
-  std::transform(name.begin(), name.end(), name.begin(),
-                 ::tolower);  // convert to lower case
-
-  int match = -1;
-  for (int i = 0; i < bodies.size(); i++) {
-    // the C++ URDF parser does not generate link names with welded links
-    // connected, but the MATLAB parser still does, and those linknames
-    // might come in if these methods are called on a RBT that originated
-    // in MATLAB.
-    string lower_link_name = bodies[i]->name_;
-    std::transform(lower_link_name.begin(), lower_link_name.end(),
-                   lower_link_name.begin(),
-                   ::tolower);                    // convert to lower case
-    auto substr_start = 0;
-    auto substr_end = -1;
-    while (substr_end != lower_link_name.length()){ // iterate over welded link names separated by "+"s
+    // The MATLAB parser still merges links with + signs if they are
+    // welded, so we split by + and look over all individual links in
+    // the weld.
+    size_t substr_start = 0;
+    size_t substr_end = -1;
+    while (substr_end != current_body_name.length()){
       // find next delimeter or end of string
       substr_start = substr_end + 1;
-      substr_end = lower_link_name.find("+", substr_start); 
+      substr_end = current_body_name.find("+", substr_start); 
       if (substr_end == string::npos)
-        substr_end = lower_link_name.length();
+        substr_end = current_body_name.length();
 
       // check if this is our link
-      if (lower_link_name.substr(substr_start, substr_end-substr_start).compare(name) == 0) {
-        if (robot == -1 ||
-            bodies[i]->robotnum == robot) {  // it's the right robot
-          if (match < 0) {                   // it's the first match
-            match = i;
-          } else {
-            std::cerr << "RigidBodyTree::findLink: ERROR: Found multiple links "
-                      << "named " << name << "." << std::endl;
-            return nullptr;
-          }
+      if (current_body_name.substr(substr_start, substr_end-substr_start)
+            .compare(body_name_lower) == 0) {
+        if (match_index < 0) {
+          match_index = ii;
+        } else {
+          throw std::logic_error(
+              "RigidBodyTree::FindBody: ERROR: found multiple bodys named \"" +
+              body_name + "\", model name = \"" + model_name +
+              "\", model intsance id = " + std::to_string(model_instance_id) +
+              ".");
         }
-      }
-    }
-  }
-  if (match >= 0) return bodies[match].get();
-  std::cerr << "RigidBodyTree::findLink: ERROR: Could not find any links named "
-            << name << "." << std::endl;
-  return nullptr;
-}
-
-RigidBody* RigidBodyTree::findLink(std::string name,
-                                   std::string model_name) const {
-  std::transform(name.begin(), name.end(), name.begin(),
-                 ::tolower);  // convert to lower case
-  std::transform(model_name.begin(), model_name.end(), model_name.begin(),
-                 ::tolower);  // convert to lower case
-
-  int match = -1;
-  for (int i = 0; i < bodies.size(); i++) {
-    // the C++ URDF parser does not generate link names with welded links
-    // connected, but the MATLAB parser still does, and those linknames
-    // might come in if these methods are called on a RBT that originated
-    // in MATLAB.
-    string lower_link_name = bodies[i]->name_;
-    std::transform(lower_link_name.begin(), lower_link_name.end(),
-                   lower_link_name.begin(),
-                   ::tolower);                    // convert to lower case
-
-    auto substr_start = 0;
-    auto substr_end = -1;
-    while (substr_end != lower_link_name.length()){ // iterate over welded link names separated by "+"s
-      // find next delimeter or end of string
-      substr_start = substr_end + 1;
-      substr_end = lower_link_name.find("+", substr_start); 
-      if (substr_end == string::npos)
-        substr_end = lower_link_name.length();
-
-      // check if this is our link
-      if (lower_link_name.substr(substr_start, substr_end-substr_start).compare(name) == 0) {
-
-        string lower_model_name = bodies[i]->model_name_;
-        std::transform(lower_model_name.begin(), lower_model_name.end(),
-                       lower_model_name.begin(), ::tolower);
-        if (model_name.empty() ||
-            lower_model_name.compare(model_name) == 0) {  // it's the right robot
-          if (match < 0) {                                // it's the first match
-            match = i;
-          } else {
-            cerr << "RigidBodyTree::findLink: ERROR: Found multiple links named "
-                 << name << endl;
-            return nullptr;
-          }
-        }
->>>>>>> RBT findlink improvement
       }
     }
   }
