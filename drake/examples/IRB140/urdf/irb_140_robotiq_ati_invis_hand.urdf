@@ -588,15 +588,6 @@
       <mass value="0.00001"/>
       <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
     </inertial>
-    <visual>
-      <origin rpy="0 1.57 0" xyz=".007618 0 0"/>
-      <geometry>
-        <cylinder length=".015236" radius="0.001"/>
-      </geometry>
-      <material name="fourbar">
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
-    </visual>
   </link>
   <joint name="finger_middle_joint_0" type="revolute">
     <parent link="finger_middle_link_0"/>
@@ -1063,9 +1054,9 @@
   <link name="gelsight_box">
     <visual>
       <geometry>
-        <box size="0.033 0.033 0.033"/>
+        <box size="0.033 0.033 0.031"/>
       </geometry>
-      <origin xyz="0 0 -0.0166"/>
+      <origin xyz="0 0 -0.0165"/>
     </visual>
     <!--
     <collision group="gelsight">
@@ -1082,7 +1073,7 @@
     </inertial>
   </link>
   <joint name="gelsight_box_joint" type="fixed">
-    <origin rpy="3.1415 -1.579 0.0" xyz="0.105 0 0"/>
+    <origin rpy="3.1415 -1.579 0.0" xyz="0.09814 0 0"/>
     <parent link="link_6"/>
     <child link="gelsight_box"/>
   </joint>
