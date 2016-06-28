@@ -280,7 +280,13 @@ classdef QPLocomotionPlanSettings
       obj.is_quasistatic = options.is_quasistatic;
       obj.gain_set = options.gain_set;
 
+      % set the COM and ZMP trajectories
       obj = obj.setCOMTraj();
+      zmptraj = obj.comtraj;
+      zmptraj = setOutputFrame(zmptraj, SingletonCoordinateFrame('desiredZMP',2,'z',{'x_zmp','y_zmp'}));
+      obj.zmptraj = zmptraj;
+
+
       if ~obj.is_quasistatic
         support_state = obj.supports(1);
         for j = 1:length(obj.supports)
@@ -294,14 +300,13 @@ classdef QPLocomotionPlanSettings
           active_contact_pts = [active_contact_pts, obj.robot.forwardKin(kinsol, support_state.bodies(j), support_state.contact_pts{j}, 0)];
         end
         comgoal = mean(active_contact_pts(1:2,:), 2);
-        obj.zmptraj = comgoal;
-        [~, obj.V, ~, LIP_height] = obj.robot.planZMPController(comgoal, x0(1:obj.robot.getNumPositions()));
+        [~, obj.V, ~, LIP_height] = obj.robot.planZMPController(obj.zmptraj, x0(1:obj.robot.getNumPositions()));
         obj.zmp_data.D = -LIP_height / obj.g * eye(2);
         obj.D_control = -obj.robot.default_walking_params.nominal_LIP_COM_height / obj.g * eye(2);
       else
+        % not sure what this actualy does . . . 
         % We can just use a comgoal of [0;0] here because, for the quasistatic solution, it has no effect on V
         [~, obj.V, ~, LIP_height] = obj.robot.planZMPController([0;0], x0(1:obj.robot.getNumPositions()));
-        obj.zmptraj = obj.comtraj;
         obj.zmp_data.D = -LIP_height / obj.g * eye(2);
         obj.D_control = -obj.robot.default_walking_params.nominal_LIP_COM_height / obj.g * eye(2);
       end
