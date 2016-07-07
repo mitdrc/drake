@@ -1304,8 +1304,6 @@ int InstantaneousQPController::setupAndSolveQP(
         int body_id0 = robot->parseBodyOrFrameID(
             desired_body_accelerations[i].body_or_frame_id0);
         
-        std::cout << robot->getBodyOrFrameName(body_id0) << std::endl;
-        
         if (desired_body_accelerations[i].control_pose_when_in_contact ||
             !inSupport(active_supports, body_id0)) {
           Matrix<double, 6, Dynamic> Jb_compact = robot->geometricJacobian(
