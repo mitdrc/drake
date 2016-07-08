@@ -98,7 +98,7 @@ class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial
                                 int segment_number, Eigen::Index row_start = 0,
                                 Eigen::Index col_start = 0);
 
-  PiecewisePolynomial slice(int start_segment_index, int num_segments);
+  PiecewisePolynomial slice(int start_segment_index, int num_segments) const;
 
   static PiecewisePolynomial random(
       Eigen::Index rows, Eigen::Index cols,
