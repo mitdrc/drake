@@ -183,4 +183,22 @@ void lqr(Eigen::MatrixBase<DerivedA> const& A,
   K = R_cholesky.solve(B.transpose() * S);
 }
 
+// https://en.wikipedia.org/wiki/Linear-quadratic_regulator
+template <typename DerivedA, typename DerivedB,
+          typename DerivedQ, typename DerivedR, typename DerivedN,
+          typename DerivedK, typename DerivedS>
+void lqr(Eigen::MatrixBase<DerivedA> const& A,
+         Eigen::MatrixBase<DerivedB> const& B,
+         Eigen::MatrixBase<DerivedQ> const& Q,
+         Eigen::MatrixBase<DerivedR> const& R,
+         Eigen::MatrixBase<DerivedN> const& N,
+         Eigen::MatrixBase<DerivedK>& K,
+         Eigen::MatrixBase<DerivedS>& S) {
+  Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
+  Eigen::MatrixXd Q1 = Q - N * R_cholesky.solve(N.transpose());
+  Eigen::MatrixXd A1 = A - B * R_cholesky.solve(N.transpose()); 
+  care(A1, B, Q1, R, S);
+  K = R_cholesky.solve(B.transpose() * S + N.transpose());
+}
+ 
 #endif /* DRAKE_UTIL_H_ */
