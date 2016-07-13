@@ -1602,6 +1602,72 @@ Eigen::Matrix<typename Derived1::Scalar, 3, 1> closestExpmap(
   }
 }
 
+template <typename Derived1, typename Derived2>
+void closestExpmap1(
+    const Eigen::MatrixBase<Derived1> &expmap1,
+    const Eigen::MatrixBase<Derived2> &expmap2,
+    Eigen::Matrix<typename Derived1::Scalar, 3, 1> &w2_closest,
+    Eigen::Matrix<typename Derived1::Scalar, 3, 3> &dw2_closest_dw2) {
+  using namespace Eigen;
+  using namespace std;
+  static_assert(
+      Derived1::RowsAtCompileTime == 3 && Derived1::ColsAtCompileTime == 1,
+      "Wrong size.");
+  static_assert(
+      Derived2::RowsAtCompileTime == 3 && Derived2::ColsAtCompileTime == 1,
+      "Wrong size.");
+  static_assert(
+      std::is_same<typename Derived1::Scalar, typename Derived2::Scalar>::value,
+      "Scalar types don't match.");
+  typedef typename Derived1::Scalar Scalar;
+  typedef typename NumTraits<Scalar>::Real Real;
+
+  Real expmap1_norm = expmap1.norm();
+  Real expmap2_norm = expmap2.norm();
+  Eigen::Matrix<Scalar, 3, 1> ret;
+  if (expmap2_norm < NumTraits<Scalar>::epsilon()) {
+    if (expmap1_norm > NumTraits<Scalar>::epsilon()) {
+      auto expmap1_axis = (expmap1 / expmap1_norm).eval();
+      auto expmap1_round = round(expmap1_norm / (2 * M_PI));
+      w2_closest = expmap1_axis * expmap1_round * 2 * M_PI;
+      dw2_closest_dw2 = Eigen::Matrix<typename Derived1::Scalar, 3, 3>::Zero();
+    } else {
+      w2_closest = expmap2;
+      dw2_closest_dw2 =
+          Eigen::Matrix<typename Derived1::Scalar, 3, 3>::Identity();
+    }
+  } else {
+    auto expmap2_axis = (expmap2 / expmap2_norm).eval();
+    Eigen::Matrix<Scalar, 3, 3> dw2_axis_dw2 =
+        (expmap2_norm * Eigen::Matrix<Scalar, 3, 3>::Identity() -
+         (expmap2 * expmap2.transpose()).eval() / expmap2_norm) /
+        (expmap2_norm * expmap2_norm);
+    auto expmap2_closest_k =
+        ((expmap2_axis.transpose() * expmap1).value() - expmap2_norm) /
+        (2 * M_PI);
+    auto expmap2_closest_k1 = floor(expmap2_closest_k);
+    auto expmap2_closest_k2 = ceil(expmap2_closest_k);
+    // doesn't match the matlab code /drake/util/closestExpmap.m
+    // auto expmap2_closest_k2 = expmap2_closest_k1 + 1.0;
+    auto expmap2_closest1 =
+        (expmap2 + 2 * expmap2_closest_k1 * M_PI * expmap2_axis).eval();
+    auto expmap2_closest2 =
+        (expmap2 + 2 * expmap2_closest_k2 * M_PI * expmap2_axis).eval();
+    if ((expmap2_closest1 - expmap1).norm() <
+        (expmap2_closest2 - expmap1).norm()) {
+      w2_closest = expmap2_closest1;
+      dw2_closest_dw2 =
+          Eigen::Matrix<typename Derived1::Scalar, 3, 3>::Identity() +
+          2 * dw2_axis_dw2 * expmap2_closest_k1 * M_PI;
+    } else {
+      w2_closest = expmap2_closest2;
+      dw2_closest_dw2 =
+          Eigen::Matrix<typename Derived1::Scalar, 3, 3>::Identity() +
+          2 * dw2_axis_dw2 * expmap2_closest_k2 * M_PI;
+    }
+  }
+}
+
 template <typename DerivedQ, typename DerivedE>
 void quat2expmapSequence(const Eigen::MatrixBase<DerivedQ>& quat,
                          const Eigen::MatrixBase<DerivedQ>& quat_dot,
