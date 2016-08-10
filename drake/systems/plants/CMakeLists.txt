@@ -22,7 +22,7 @@ add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
   rigid_body_frame.cc
   rigid_body_loop.cc)
 target_link_libraries(drakeRBM drakeCollision drakeJoints drakeUtil drakeXMLUtil)
-pods_install_libraries(drakeRBM)
+
 drake_install_headers(
   ConstraintWrappers.h
   ForceTorqueMeasurement.h
