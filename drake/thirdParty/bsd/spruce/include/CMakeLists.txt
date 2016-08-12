@@ -1,0 +1,1 @@
+drake_install_headers(spruce.hh)
