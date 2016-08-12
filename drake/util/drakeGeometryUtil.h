@@ -16,6 +16,7 @@
 #include "drake/drakeGeometryUtil_export.h"
 #include "drake/math/gradient.h"
 #include "drake/math/quaternion.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/util/drakeGradientUtil.h"
 
 const int HOMOGENEOUS_TRANSFORM_SIZE = 16;
