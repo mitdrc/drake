@@ -154,22 +154,22 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
 
   // whole body data
   // change this to use the new qtraj format in the qp_input msg which is splines
-  auto q_des = settings.q_traj.value(t_plan);
+  auto q_des = settings_.q_traj.value(t_plan);
 
   // extract the slice of the polynomial that we want. Now encode it into the appropriate message
-  PiecewisePolynomial<double>& qtrajSpline = settings.q_traj;
+  PiecewisePolynomial<double>& qtrajSpline = settings_.q_traj;
   int qtrajSegmentIdx = qtrajSpline.getSegmentIndex(t_plan);
   int endSegmentIdx = std::min(2, qtrajSpline.getNumberOfSegments() - qtrajSegmentIdx);
   PiecewisePolynomial<double> qtrajSlice = qtrajSpline.slice(qtrajSegmentIdx, endSegmentIdx);
 
   // apply plan shift if necessary.
   // note that the plan shift is only for position of floating base, namely, x,y,z
-  if (settings.use_plan_shift) {
+  if (settings_.use_plan_shift) {
     PiecewisePolynomial<double>::CoefficientMatrix qtrajTrajectoryShift(qtrajSlice.rows(), qtrajSlice.cols());
-    for (auto direction_it = settings.plan_shift_body_motion_indices.begin();
-         direction_it != settings.plan_shift_body_motion_indices.end();
+    for (auto direction_it = settings_.plan_shift_body_motion_indices.begin();
+         direction_it != settings_.plan_shift_body_motion_indices.end();
          ++direction_it) {
-      qtrajTrajectoryShift(*direction_it) = plan_shift(*direction_it);
+      qtrajTrajectoryShift(*direction_it) = plan_shift_[*direction_it];
     }
 
     qtrajSlice -= qtrajTrajectoryShift;
@@ -181,7 +181,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
   qp_input.whole_body_data.spline = qtrajSplineMsg;
 
   qp_input.whole_body_data.timestamp = 0;
-  qp_input.whole_body_data.num_positions = robot.number_of_positions();
+  qp_input.whole_body_data.num_positions = robot_.number_of_positions();
   qp_input.whole_body_data.constrained_dofs =
       settings_.constrained_position_indices;
   addOffset(qp_input.whole_body_data.constrained_dofs,
