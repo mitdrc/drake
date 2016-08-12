@@ -78,8 +78,7 @@ include_directories(BEFORE ${PROJECT_BINARY_DIR}/exports/)
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all -Werror=ignored-qualifiers
-  -Wno-maybe-uninitialized)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all -Werror=ignored-qualifiers -Wno-maybe-uninitialized")
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     # TODO(#2852) Turn on shadow checking for g++ once we use a version that fixes
     # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57709
