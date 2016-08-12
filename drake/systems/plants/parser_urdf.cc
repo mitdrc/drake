@@ -998,7 +998,7 @@ void parseCollisionFilterGroup(RigidBodyTree *model,
   }
 }
 
-void parseRobot(RigidBodyTree* model, XMLElement* node,
+void parseRobot(RigidBodyTree* tree, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
                 const DrakeJoint::FloatingBaseType floating_base_type,
                 std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr) {
@@ -1007,7 +1007,7 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
 
   string robotname = node->Attribute("name");
 
-  // Parses the model's material elements.
+  // Parses the tree's material elements.
   MaterialMap materials;
   for (XMLElement* material_node = node->FirstChildElement("material");
        material_node;
@@ -1026,7 +1026,7 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
   // to attach floating joints.
   std::vector<int> link_indices;
 
-  // Parses the model's link elements.
+  // Parses the tree's link elements.
   for (XMLElement* link_node = node->FirstChildElement("link"); link_node;
        link_node = link_node->NextSiblingElement("link")) {
     int index;
@@ -1043,7 +1043,7 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
           string(RigidBodyTree::kWorldName)) {
         // A world link was specified within the URDF. The following code
         // verifies that parameter weld_to_frame is not specified. It throws an
-        // exception if it is since the model being added is connected to the
+        // exception if it is since the tree being added is connected to the
         // world in two different ways. Otherwise, it extract the information
         // necessary create the virtual joint that connects the robot to the
         // world.
@@ -1051,7 +1051,7 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
           throw runtime_error(
               "Both weld_to_frame and world link specified. "
               "Only one may be specified when instantiating "
-              "a URDF model.");
+              "a URDF tree.");
         } else {
           // Since a world link was specified, there must be a joint that
           // connects the world to the robot's root note. The following
@@ -1065,8 +1065,8 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
   // DEBUG
   // else {
   // cout << "Parsed link" << endl;
-  // cout << "model->bodies.size() = " << model->bodies.size() << endl;
-  // cout << "model->num_bodies = " << model->num_bodies << endl;
+  // cout << "tree->bodies.size() = " << tree->bodies.size() << endl;
+  // cout << "tree->num_bodies = " << tree->num_bodies << endl;
   //}
   // END_DEBUG
 
@@ -1079,7 +1079,7 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
        collision_filter_group_node = 
           collision_filter_group_node->NextSiblingElement(
             "collision_filter_group")) {
-    parseCollisionFilterGroup(model, 
+    parseCollisionFilterGroup(tree, 
                               collision_filter_group_node, 
                               group_names, 
                               group_members, 
@@ -1089,7 +1089,7 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
   // Applies collision filter groups.
   DrakeCollision::bitmask belongs_to, ignores;
   vector<string>::iterator ignored_group;
-  for (int group = 0; group < group_names.size(); group++)
+  for (size_t group = 0; group < group_names.size(); group++)
   {
     belongs_to = DrakeCollision::NONE_MASK;
     ignores = DrakeCollision::NONE_MASK;
@@ -1104,34 +1104,34 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
     }
     for (auto link : group_members[group])
     {
-      model->findLink(link)->addToCollisionFilterGroup(belongs_to);
-      model->findLink(link)->ignoreCollisionFilterGroup(ignores);
+      tree->FindBody(link)->addToCollisionFilterGroup(belongs_to);
+      tree->FindBody(link)->ignoreCollisionFilterGroup(ignores);
     }
   }
 
-  // Parses the model's joint elements.
+  // Parses the tree's joint elements.
   for (XMLElement* joint_node = node->FirstChildElement("joint"); joint_node;
        joint_node = joint_node->NextSiblingElement("joint"))
     parseJoint(tree, joint_node);
 
-  // Parses the model's transmission elements.
+  // Parses the tree's transmission elements.
   for (XMLElement* transmission_node = node->FirstChildElement("transmission");
        transmission_node;
        transmission_node =
            transmission_node->NextSiblingElement("transmission"))
     parseTransmission(tree, transmission_node);
 
-  // Parses the model's loop joint elements.
+  // Parses the tree's loop joint elements.
   for (XMLElement* loop_node = node->FirstChildElement("loop_joint"); loop_node;
        loop_node = loop_node->NextSiblingElement("loop_joint"))
     parseLoop(tree, loop_node);
 
-  // Parses the model's Drake frame elements.
+  // Parses the tree's Drake frame elements.
   for (XMLElement* frame_node = node->FirstChildElement("frame"); frame_node;
        frame_node = frame_node->NextSiblingElement("frame"))
     parseFrame(tree, frame_node);
 
-  // Adds the floating joint(s) that connect the newly added robot model to the
+  // Adds the floating joint(s) that connect the newly added robot tree to the
   // rest of the rigid body tree.
   tree->AddFloatingJoint(actual_floating_base_type, link_indices,
                           weld_to_frame);
