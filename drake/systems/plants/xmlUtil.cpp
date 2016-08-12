@@ -257,24 +257,37 @@ void searchDirectory(map<string, string>& package_map, string path) {
           XMLDocument xml_doc;
           xml_doc.LoadFile(file_name.data());
           if (xml_doc.ErrorID()) {
-            throw std::runtime_error(
-                "xmlUtil.cpp: searchDirectory: Failed to parse XML in file " +
-                file_name + "\n" + xml_doc.ErrorName());
+            std::cerr << "xmlUtil.cpp:: searchDirectory: WARNING: "
+                      << "Failed to parse XML in file \""
+                      << file_name 
+                      << "\": "
+                      << xml_doc.ErrorName()
+                      << ".  Ignoring..."
+                      << std::endl;
+            tinydir_next(&dir);
+            break;
           }
 
           XMLElement* package_node = xml_doc.FirstChildElement("package");
           if (!package_node) {
-            throw std::runtime_error(
-                "xmlUtil.cpp: searchDirectory: ERROR: XML file \"" + file_name +
-                "\" does not contain a <package> element.");
+            std::cerr << "xmlUtil.cpp:: searchDirectory: WARNING: "
+                      << "XML file \""
+                      << file_name 
+                      << "\" does not contain a <package> element. Ignoring..."
+                      << std::endl;
+            tinydir_next(&dir);
+            break;
           }
 
           XMLElement* name_node = package_node->FirstChildElement("name");
           if (!name_node) {
-            throw std::runtime_error(
-                "xmlUtil.cpp: searchDirectory: ERROR: <package> element does "
-                "not contain a <name> element. (XML file \"" +
-                file_name + "\")");
+            std::cerr << "xmlUtil.cpp:: searchDirectory: WARNING: "
+                      << "XML file \""
+                      << file_name 
+                      << "\" does not contain a <name> element. Ignoring..."
+                      << std::endl;
+            tinydir_next(&dir);
+            break;
           }
 
           package_name = name_node->FirstChild()->Value();
