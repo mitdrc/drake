@@ -23,6 +23,7 @@ lcm_wrap_types(
   lcmt_joint_pd_override.lcm
   lcmt_iiwa_command.lcm
   lcmt_iiwa_status.lcm
+  lcmt_optotrak.lcm
   lcmt_piecewise_polynomial.lcm
   lcmt_polynomial.lcm
   lcmt_polynomial_matrix.lcm

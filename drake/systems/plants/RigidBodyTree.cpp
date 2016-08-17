@@ -482,7 +482,7 @@ bool RigidBodyTree::collisionRaycast(const KinematicsCache<double>& cache,
 
   body_idx.resize(collision_body.size());
   for (size_t i = 0; i < collision_body.size(); i++){
-    if (distances[i] >= 0.0){
+    if (distances[i] < 0.0){
       body_idx[i] = -1;
     } else {
       const DrakeCollision::Element* element = 
