@@ -139,6 +139,8 @@ class BulletModel : public Model {
   static constexpr double kSmallMargin = 1e-9;
   static constexpr double kLargeMargin = 0.05;
 
+  static constexpr double kGlobalScaling = 100.0;
+
   // BulletModel objects are not copyable
   BulletModel(const BulletModel&) = delete;
   BulletModel& operator=(const BulletModel&) = delete;
