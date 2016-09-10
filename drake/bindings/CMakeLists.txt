@@ -1,4 +1,4 @@
-if(NOT WIN32)
+if(0)
   # Look for the swig provided by our superbuild.  If it doesn't exist,
   # don't fall back to system swig because it may be the wrong version
   # and likely does not support matlab.
