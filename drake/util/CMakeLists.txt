@@ -156,4 +156,5 @@ install(FILES ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
 endif(0) #NOT WIN32)
 
 add_subdirectory(yaml)
+add_subdirectory(filter)
 
