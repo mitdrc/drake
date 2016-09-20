@@ -197,6 +197,9 @@ void loadSingleInputParams(QPControllerParams& params,
   params.hardware.joint_is_position_controlled(position_index) =
       get(hardware_config, "joint_is_position_controlled").as<bool>();
 
+  params.hardware.maxDeltaPerSecond(position_index) =
+        get(hardware_config, "maxDeltaPerSecond").as<double>();
+
   if (params.hardware.joint_is_position_controlled(position_index)) {
     params.hardware.gains.k_q_p(position_index) =
         get(hardware_config, "k_q_p").as<double>();

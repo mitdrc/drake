@@ -256,11 +256,13 @@ struct HardwareParams {
             robot.actuators.size())),
         joint_is_position_controlled(
             Eigen::Matrix<bool, Eigen::Dynamic, 1>::Zero(
-                robot.actuators.size())) {}
+                robot.actuators.size())),
+        maxDeltaPerSecond(Eigen::VectorXd::Zero(robot.actuators.size())) {}
 
   HardwareGains gains;
   Eigen::Matrix<bool, Eigen::Dynamic, 1> joint_is_force_controlled;
   Eigen::Matrix<bool, Eigen::Dynamic, 1> joint_is_position_controlled;
+  Eigen::VectorXd maxDeltaPerSecond;
 
   friend bool operator==(const HardwareParams& lhs, const HardwareParams& rhs) {
     return lhs.gains == rhs.gains &&

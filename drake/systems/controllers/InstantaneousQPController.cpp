@@ -9,6 +9,7 @@
 #include "drake/solvers/fastQP.h"
 #include "drake/Path.h"
 #include "lcmtypes/drake/lcmt_zmp_com_observer_state.hpp"
+#include "drake/util/filter/SlewFilter.h"
 
 const double REG = 1e-8;
 
@@ -159,6 +160,20 @@ void InstantaneousQPController::initialize() {
   controller_state.last_com_ddot = Eigen::Vector3d::Zero();
 
   comdd_prev.setZero();
+  initializeFilters();
+}
+
+void InstantaneousQPController::initializeFilters() {
+
+  //setup the torque slew filters
+  Eigen::VectorXd & maxDeltaPerSecond = param_sets.at("base").hardware.maxDeltaPerSecond;
+
+  for(int i = 0; i < maxDeltaPerSecond.size(); i++){
+    torque_slew_filter_.push_back(FilterTools::SlewFilter(maxDeltaPerSecond(i)));
+  }
+
+
+
 }
 
 void InstantaneousQPController::loadConfigurationFromYAML(
@@ -1665,8 +1680,15 @@ int InstantaneousQPController::setupAndSolveQP(
   // use transpose because B_act is orthogonal
   qp_output.u =
       B_act.transpose() * (H_act * qp_output.qdd + C_act - D_act * beta);
+
+
+  // filter out NAN's. Also apply the slew filter
+  // may not need to do torque alpha filtering given that we have this here
+  // may want to store raw qp torques somewhere, they are likely very different, especially when
+  // we want to have large COM accelerations
   for (int i = 0; i < qp_output.u.size(); i++) {
     if (std::isnan(qp_output.u(i))) qp_output.u(i) = 0;
+    qp_output.u(i) = torque_slew_filter_[i].processSample(robot_state.t, qp_output.u(i));
   }
 
   // set active set names
