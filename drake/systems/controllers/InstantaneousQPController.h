@@ -4,6 +4,8 @@
 #include <memory>
 #include "QPCommon.h"
 #include "drake/solvers/gurobiQP.h"
+#include "drake/util/filter/SlewFilter.h"
+
 #include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
 #define INSTQP_USE_FASTQP 1
 #define INSTQP_GUROBI_OUTPUTFLAG 0
@@ -100,6 +102,9 @@ class InstantaneousQPController {
 
   Eigen::MatrixXd basisToContactWrench;
 
+
+  std::vector<FilterTools::SlewFilter> torque_slew_filter_;
+
   // logical separation for the controller state, that is, things we expect to
   // change at every iteration
   // and which must persist to the next iteration
@@ -134,6 +139,7 @@ class InstantaneousQPController {
       double dt, Eigen::Vector3d& xcom, Eigen::Vector3d& xcomdot);
 
   void initialize();
+  void initializeFilters();
   void loadConfigurationFromYAML(const std::string& control_config_filename);
 
 };

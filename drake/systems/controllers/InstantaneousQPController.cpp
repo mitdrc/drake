@@ -9,6 +9,7 @@
 #include "drake/solvers/fastQP.h"
 #include "drake/Path.h"
 #include "lcmtypes/drake/lcmt_zmp_com_observer_state.hpp"
+#include "drake/util/filter/SlewFilter.h"
 
 const double REG = 1e-8;
 
@@ -159,7 +160,23 @@ void InstantaneousQPController::initialize() {
   controller_state.center_of_mass_observer_state = Eigen::Vector4d::Zero();
   controller_state.last_com_ddot = Eigen::Vector3d::Zero();
   controller_state.last_u = Eigen::VectorXd::Zero(nu);
-  controller_state.last_com_ddot_des = Eigen::Vector3d::Zero();
+
+  initializeFilters();
+}
+
+void InstantaneousQPController::initializeFilters() {
+
+  //setup the torque slew filters
+  Eigen::VectorXd & maxDeltaPerSecond = param_sets.at("base").hardware.maxDeltaPerSecond;
+
+  for(int i = 0; i < maxDeltaPerSecond.size(); i++){
+    torque_slew_filter_.push_back(FilterTools::SlewFilter(maxDeltaPerSecond(i)));
+  }
+
+  double& breakFrequencyInHz = param_sets.at("base").comdd_alpha_break_frequency_hz;
+  for (int i = 0; i < 2; i++) {
+    controller_state.comdd_des_alpha_filter.push_back(FilterTools::AlphaFilter(breakFrequencyInHz));
+  }
 }
 
 void InstantaneousQPController::loadConfigurationFromYAML(
@@ -1093,6 +1110,9 @@ int InstantaneousQPController::setupAndSolveQP(
                  + u0.transpose() * R_ls
                  - (S*x_bar+0.5*s1).transpose() * B_ls;
   VectorXd comdd_d = R_DQyD_ls.inverse() * lin.transpose();
+  for (int i = 0; i < 2; i++) {
+    comdd_d[i] = controller_state.comdd_des_alpha_filter[i].processSample(robot_state.t, comdd_d[i]);
+  }
 
   /*
   for (int i = 0; i < comdd_d.size(); i++) {
@@ -1129,7 +1149,7 @@ int InstantaneousQPController::setupAndSolveQP(
       //fqp = w_zmp * fqp * Jcom;
 
       fqp = w_zmp * (Jcomdotv - comdd_d).transpose() * Jcom;
-      fqp += params.w_comdd_delta * (Jcomdotv - controller_state.last_com_ddot.head(Jcom.rows())).transpose() * Jcom;
+      //fqp += params.w_comdd_delta * (Jcomdotv - controller_state.last_com_ddot.head(Jcom.rows())).transpose() * Jcom;
 
       fqp -= (w_qdd.array() * pid_out.qddot_des.array()).matrix().transpose();
       if(qp_output.qdd.size() == nq){
@@ -1495,7 +1515,7 @@ int InstantaneousQPController::setupAndSolveQP(
     if (nc > 0) {
       //Hqp = w_zmp * Jcom.transpose() * R_DQyD_ls * Jcom;
       Hqp = w_zmp * Jcom.transpose() * Jcom;
-      Hqp += params.w_comdd_delta * Jcom.transpose() * Jcom;
+      //Hqp += params.w_comdd_delta * Jcom.transpose() * Jcom;
 
       if (include_angular_momentum) {
         Hqp += Ak.transpose() * params.W_kdot * Ak;
@@ -1672,8 +1692,15 @@ int InstantaneousQPController::setupAndSolveQP(
   // use transpose because B_act is orthogonal
   qp_output.u =
       B_act.transpose() * (H_act * qp_output.qdd + C_act - D_act * beta);
+
+
+  // filter out NAN's. Also apply the slew filter
+  // may not need to do torque alpha filtering given that we have this here
+  // may want to store raw qp torques somewhere, they are likely very different, especially when
+  // we want to have large COM accelerations
   for (int i = 0; i < qp_output.u.size(); i++) {
     if (std::isnan(qp_output.u(i))) qp_output.u(i) = 0;
+    //qp_output.u(i) = torque_slew_filter_[i].processSample(robot_state.t, qp_output.u(i));
   }
 
   // set active set names

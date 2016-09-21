@@ -8,6 +8,7 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
 #include "drake/systems/robotInterfaces/Side.h"
+#include "drake/util/filter/AlphaFilter.hpp"
 
 struct QPControllerState {
   double t_prev;
@@ -23,7 +24,9 @@ struct QPControllerState {
   Eigen::Vector4d center_of_mass_observer_state;
   Eigen::Vector3d last_com_ddot;
 
-  Eigen::Vector3d last_com_ddot_des;
+  std::vector<FilterTools::AlphaFilter> comdd_des_alpha_filter;
+
+  //Eigen::Vector3d last_com_ddot_des;
 
   // output torque
   Eigen::VectorXd last_u;
@@ -261,11 +264,13 @@ struct HardwareParams {
             robot.actuators.size())),
         joint_is_position_controlled(
             Eigen::Matrix<bool, Eigen::Dynamic, 1>::Zero(
-                robot.actuators.size())) {}
+                robot.actuators.size())),
+        maxDeltaPerSecond(Eigen::VectorXd::Zero(robot.actuators.size())) {}
 
   HardwareGains gains;
   Eigen::Matrix<bool, Eigen::Dynamic, 1> joint_is_force_controlled;
   Eigen::Matrix<bool, Eigen::Dynamic, 1> joint_is_position_controlled;
+  Eigen::VectorXd maxDeltaPerSecond;
 
   friend bool operator==(const HardwareParams& lhs, const HardwareParams& rhs) {
     return lhs.gains == rhs.gains &&
@@ -297,6 +302,7 @@ struct QPControllerParams {
         mu(0.7),
         Jpdotv_multiplier(1.0),
         w_zmp(1.0),
+        comdd_alpha_break_frequency_hz(1e9),
         w_comdd_delta(0),
         comdd_alpha(0.9),
         w_z_trq(0.0),
@@ -320,6 +326,7 @@ struct QPControllerParams {
   double contact_threshold;
   bool useTorqueAlphaFilter;
   double w_zmp;
+  double comdd_alpha_break_frequency_hz;
   double comdd_alpha;
   double w_comdd_delta;
   double w_z_trq;

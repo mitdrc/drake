@@ -1,0 +1,4 @@
+add_library_with_exports(LIB_NAME drakeFilterUtil SOURCE_FILES SlewFilter.cpp AlphaFilter.cpp)
+pods_use_pkg_config_packages(drakeFilterUtil eigen3)
+pods_install_libraries(drakeFilterUtil)
+drake_install_headers(SlewFilter.h SimpleFilter.h AlphaFilter.hpp)

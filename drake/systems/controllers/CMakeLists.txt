@@ -1,7 +1,7 @@
 drake_install_headers(LQR.h)
 
 add_library_with_exports(LIB_NAME drakeControlUtil SOURCE_FILES controlUtil.cpp)
-target_link_libraries(drakeControlUtil drakeRBM drakeUtil drakeTrajectories)
+target_link_libraries(drakeControlUtil drakeRBM drakeUtil drakeTrajectories drakeFilterUtil)
 pods_install_libraries(drakeControlUtil)
 drake_install_headers(controlUtil.h)
 pods_install_pkg_config_file(drake-control-util
