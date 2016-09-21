@@ -23,6 +23,11 @@ struct QPControllerState {
   Eigen::Vector4d center_of_mass_observer_state;
   Eigen::Vector3d last_com_ddot;
 
+  Eigen::Vector3d last_com_ddot_des;
+
+  // output torque
+  Eigen::VectorXd last_u;
+
   // gurobi active set params
   int* vbasis;
   int* cbasis;
@@ -293,6 +298,7 @@ struct QPControllerParams {
         Jpdotv_multiplier(1.0),
         w_zmp(1.0),
         w_comdd_delta(0),
+        comdd_alpha(0.9),
         w_z_trq(0.0),
         min_knee_angle(0.0),
         ankle_torque_alpha(0.0),
@@ -314,6 +320,7 @@ struct QPControllerParams {
   double contact_threshold;
   bool useTorqueAlphaFilter;
   double w_zmp;
+  double comdd_alpha;
   double w_comdd_delta;
   double w_z_trq;
   double w_qdd_delta;
@@ -412,6 +419,7 @@ struct QPControllerContactOutput {
   Eigen::Matrix<double, 3, 1> ref_point;
   std::vector<Eigen::Vector3d> contact_points;
   std::vector<Eigen::Vector3d> contact_forces;
+  Eigen::VectorXd basis;
 };
 
 struct QPControllerOutput {
@@ -429,9 +437,9 @@ struct QPControllerOutput {
   Eigen::VectorXd qdd_des_w_pd; // coming from the pid, actual input to the QP
 
   // output
-  Eigen::VectorXd comdd;
-  Eigen::VectorXd footdd[2];
-  Eigen::VectorXd pelvdd;
+  Eigen::Vector3d comdd;
+  Eigen::Vector6d footdd[2];
+  Eigen::Vector6d pelvdd;
   Eigen::VectorXd slack;
   std::vector<QPControllerContactOutput> contact_output;
 

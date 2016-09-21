@@ -50,6 +50,7 @@ static void reconstructContactWrench(
     contact_output[j].contact_points.resize(contact_pts.size());
     contact_output[j].contact_forces.resize(contact_pts.size());
     contact_output[j].wrench.setZero();
+    contact_output[j].basis = betaj;
 
     // compute wrench wrt to body position
     contact_output[j].ref_point = robot.transformPoints(cache, Vector3d::Zero(), body_id, 0);
@@ -157,8 +158,8 @@ void InstantaneousQPController::initialize() {
 
   controller_state.center_of_mass_observer_state = Eigen::Vector4d::Zero();
   controller_state.last_com_ddot = Eigen::Vector3d::Zero();
-
-  comdd_prev.setZero();
+  controller_state.last_u = Eigen::VectorXd::Zero(nu);
+  controller_state.last_com_ddot_des = Eigen::Vector3d::Zero();
 }
 
 void InstantaneousQPController::loadConfigurationFromYAML(
@@ -1092,6 +1093,16 @@ int InstantaneousQPController::setupAndSolveQP(
                  + u0.transpose() * R_ls
                  - (S*x_bar+0.5*s1).transpose() * B_ls;
   VectorXd comdd_d = R_DQyD_ls.inverse() * lin.transpose();
+
+  /*
+  for (int i = 0; i < comdd_d.size(); i++) {
+    controller_state.last_com_ddot_des[i] = params.comdd_alpha * controller_state.last_com_ddot_des[i] + (1 - params.comdd_alpha) * comdd_d[i];
+    comdd_d[i] = controller_state.last_com_ddot_des[i];
+    //comdd_d[i] = std::min(controller_state.last_com_ddot[i] + params.comddd_bound * (robot_state.t - controller_state.t_prev), comdd_d[i]);
+    //comdd_d[i] = std::max(controller_state.last_com_ddot[i] - params.comddd_bound * (robot_state.t - controller_state.t_prev), comdd_d[i]);
+  }
+  */
+
   qp_output.comdd_d = comdd_d;
 
   VectorXd f(nparams);
@@ -1118,8 +1129,7 @@ int InstantaneousQPController::setupAndSolveQP(
       //fqp = w_zmp * fqp * Jcom;
 
       fqp = w_zmp * (Jcomdotv - comdd_d).transpose() * Jcom;
-
-      fqp += params.w_comdd_delta * (Jcomdotv - comdd_prev.head(Jcom.rows())).transpose() * Jcom;
+      fqp += params.w_comdd_delta * (Jcomdotv - controller_state.last_com_ddot.head(Jcom.rows())).transpose() * Jcom;
 
       fqp -= (w_qdd.array() * pid_out.qddot_des.array()).matrix().transpose();
       if(qp_output.qdd.size() == nq){
@@ -1246,7 +1256,6 @@ int InstantaneousQPController::setupAndSolveQP(
 
   Ain.block(nu, 0, nu, nparams) = -1 * Ain.block(0, 0, nu, nparams);
   bin.segment(nu, nu) = B_act.transpose() * C_act - umin;
-
 
 
   // constraints on body accelerations, using slack variables
@@ -1652,9 +1661,7 @@ int InstantaneousQPController::setupAndSolveQP(
   qp_output.qdd = alpha.head(nq);
   VectorXd beta = alpha.segment(nq, nc * nd);
 
-  if (params.use_center_of_mass_observer) {
-    controller_state.last_com_ddot = Jdotv + J * qp_output.qdd;
-  }
+  controller_state.last_com_ddot = Jdotv + J * qp_output.qdd;
 
   // only do this if we actually have a floating base
   if (CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCH && (numFloatingBaseJoints > 0)) {
@@ -1686,23 +1693,17 @@ int InstantaneousQPController::setupAndSolveQP(
     trq_alpha = 0.0;
   }
 
-
-  if (trq_prev.size() != qp_output.u.size()) {
-    trq_prev.resize(qp_output.u.size());
-    trq_prev = qp_output.u;
-  }
-
-  for (int i = 0; i < trq_prev.size(); i++) {
+  for (int i = 0; i < controller_state.last_u.size(); i++) {
     // not ankle
     if (heavy_trq_filter_idx.find(i) == heavy_trq_filter_idx.end()) {
-      trq_prev[i] = trq_alpha * trq_prev[i] + (1 - trq_alpha) * qp_output.u[i];
+      controller_state.last_u[i] = trq_alpha * controller_state.last_u[i] + (1 - trq_alpha) * qp_output.u[i];
     }
     else {
       double aa = std::max(params.ankle_torque_alpha, trq_alpha);
-      trq_prev[i] = aa * trq_prev[i] + (1 - aa) * qp_output.u[i];
+      controller_state.last_u[i] = aa * controller_state.last_u[i] + (1 - aa) * qp_output.u[i];
     }
   }
-  qp_output.u = trq_prev;
+  qp_output.u = controller_state.last_u;
 
   // y = B_act.jacobiSvd(ComputeThinU|ComputeThinV).solve(H_act*qdd + C_act -
   // Jz_act.transpose()*lambda - D_act*beta);
@@ -1718,14 +1719,13 @@ int InstantaneousQPController::setupAndSolveQP(
   reconstructContactWrench(*robot, cache, active_supports, B, beta, qp_output.contact_output);
 
   // reconstruct cartdd
-  qp_output.comdd = Jcom * qp_output.qdd + Jcomdotv;
-  comdd_prev.head(Jcom.rows()) = qp_output.comdd;
+  qp_output.comdd = controller_state.last_com_ddot;
 
   int sf_idx[3];
   sf_idx[0] = rpc.foot_ids[Side::LEFT];
   sf_idx[1] = rpc.foot_ids[Side::RIGHT];
   sf_idx[2] = body_or_frame_name_to_id.at("pelvis");
-  VectorXd cartdd[3];
+  Vector6d cartdd[3];
   for (int i = 0; i < 3; i++) {
     KinematicPath body_path;
     MatrixXd Jcompact, Jfull;
