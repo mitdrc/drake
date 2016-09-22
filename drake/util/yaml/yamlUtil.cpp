@@ -284,8 +284,17 @@ struct convert<BodyMotionParams> {
         get(get(node, "Kp"), "wx").as<double>(),
         get(get(node, "Kp"), "wy").as<double>(),
         get(get(node, "Kp"), "wz").as<double>();
-    double damping_ratio = get(node, "damping_ratio").as<double>();
-    params.Kd = 2 * damping_ratio * params.Kp.array().sqrt();
+    params.Kd << get(get(node, "damping_ratio"), "x").as<double>(),
+        get(get(node, "damping_ratio"), "y").as<double>(),
+        get(get(node, "damping_ratio"), "z").as<double>(),
+        get(get(node, "damping_ratio"), "wx").as<double>(),
+        get(get(node, "damping_ratio"), "wy").as<double>(),
+        get(get(node, "damping_ratio"), "wz").as<double>();
+    //double damping_ratio = get(node, "damping_ratio").as<double>();
+    for (int i = 0; i < 6; i++) {
+      params.Kd[i] = 2 * params.Kd[i] * sqrt(params.Kp[i]);
+    }
+
     params.accel_bounds.min
         << get(get(get(node, "accel_bounds"), "min"), "x").as<double>(),
         get(get(get(node, "accel_bounds"), "min"), "y").as<double>(),
