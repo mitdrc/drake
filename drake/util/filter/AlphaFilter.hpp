@@ -37,7 +37,7 @@ class AlphaFilter: public SimpleFilter{
     AlphaFilter(const double & breakFrequencyInHz, bool verbose = false);
     virtual ~AlphaFilter() {}
 
-    double processSample(const double & x, const double & t);
+    double processSample(const double & t, const double & x);
 
   private:
     double breakFrequencyInHz_;

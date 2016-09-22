@@ -96,16 +96,6 @@ void InstantaneousQPController::initialize() {
     actuator_name_to_input_idx[robot->actuators.at(i).name] = i;
   }
 
-  std::vector<std::string> ankle_names = {"leftAnklePitchActuator", "leftAnkleRollActuator", "rightAnklePitchActuator", "rightAnkleRollActuator"};
-  std::vector<std::string> hip_z_names = {"leftHipYaw", "rightHipYaw"};
-
-  for(int i = 0; i < ankle_names.size(); i++) {
-    heavy_trq_filter_idx.emplace(actuator_name_to_input_idx[ankle_names[i]]);
-  }
-  for(int i = 0; i < hip_z_names.size(); i++) {
-    heavy_trq_filter_idx.emplace(actuator_name_to_input_idx[hip_z_names[i]]);
-  }
-
   qdd_lb = Eigen::VectorXd::Zero(nq).array() -
            std::numeric_limits<double>::infinity();
   qdd_ub = Eigen::VectorXd::Zero(nq).array() +
@@ -173,10 +163,24 @@ void InstantaneousQPController::initializeFilters() {
     torque_slew_filter_.push_back(FilterTools::SlewFilter(maxDeltaPerSecond(i)));
   }
 
+  // filter for commdd_des
   double& breakFrequencyInHz = param_sets.at("base").comdd_alpha_break_frequency_hz;
   for (int i = 0; i < 2; i++) {
     controller_state.comdd_des_alpha_filter.push_back(FilterTools::AlphaFilter(breakFrequencyInHz));
   }
+
+  // alpha filtering for joint torques
+  Eigen::VectorXd & torque_alpha_filter_break_frequency_hz = param_sets.at("base").hardware.torque_alpha_filter_break_frequency_hz;
+
+  for(int i = 0; i < torque_alpha_filter_break_frequency_hz.size(); i++){
+    breakFrequencyInHz = torque_alpha_filter_break_frequency_hz(i);
+
+    // a negative value means to not do any filtering
+    if(breakFrequencyInHz > 0){
+      controller_state.joint_torque_alpha_filter[i] = FilterTools::AlphaFilter(breakFrequencyInHz);
+    }
+  }
+
 }
 
 void InstantaneousQPController::loadConfigurationFromYAML(
@@ -1114,15 +1118,6 @@ int InstantaneousQPController::setupAndSolveQP(
     comdd_d[i] = controller_state.comdd_des_alpha_filter[i].processSample(robot_state.t, comdd_d[i]);
   }
 
-  /*
-  for (int i = 0; i < comdd_d.size(); i++) {
-    controller_state.last_com_ddot_des[i] = params.comdd_alpha * controller_state.last_com_ddot_des[i] + (1 - params.comdd_alpha) * comdd_d[i];
-    comdd_d[i] = controller_state.last_com_ddot_des[i];
-    //comdd_d[i] = std::min(controller_state.last_com_ddot[i] + params.comddd_bound * (robot_state.t - controller_state.t_prev), comdd_d[i]);
-    //comdd_d[i] = std::max(controller_state.last_com_ddot[i] - params.comddd_bound * (robot_state.t - controller_state.t_prev), comdd_d[i]);
-  }
-  */
-
   qp_output.comdd_d = comdd_d;
 
   VectorXd f(nparams);
@@ -1149,7 +1144,6 @@ int InstantaneousQPController::setupAndSolveQP(
       //fqp = w_zmp * fqp * Jcom;
 
       fqp = w_zmp * (Jcomdotv - comdd_d).transpose() * Jcom;
-      //fqp += params.w_comdd_delta * (Jcomdotv - controller_state.last_com_ddot.head(Jcom.rows())).transpose() * Jcom;
 
       fqp -= (w_qdd.array() * pid_out.qddot_des.array()).matrix().transpose();
       if(qp_output.qdd.size() == nq){
@@ -1515,7 +1509,6 @@ int InstantaneousQPController::setupAndSolveQP(
     if (nc > 0) {
       //Hqp = w_zmp * Jcom.transpose() * R_DQyD_ls * Jcom;
       Hqp = w_zmp * Jcom.transpose() * Jcom;
-      //Hqp += params.w_comdd_delta * Jcom.transpose() * Jcom;
 
       if (include_angular_momentum) {
         Hqp += Ak.transpose() * params.W_kdot * Ak;
@@ -1720,14 +1713,17 @@ int InstantaneousQPController::setupAndSolveQP(
     trq_alpha = 0.0;
   }
 
+  // do the torque alpha filtering.
+  // Some joints (those in joint_torque_alpha_filter) are always being filtered.
+  // Others are only being filtered when the torque_alpha_filter value in qp_input is > 0;
   for (int i = 0; i < controller_state.last_u.size(); i++) {
     // not ankle
-    if (heavy_trq_filter_idx.find(i) == heavy_trq_filter_idx.end()) {
+    auto search = controller_state.joint_torque_alpha_filter.find(i);
+    if (search == controller_state.joint_torque_alpha_filter.end()) {
       controller_state.last_u[i] = trq_alpha * controller_state.last_u[i] + (1 - trq_alpha) * qp_output.u[i];
     }
     else {
-      double aa = std::max(params.ankle_torque_alpha, trq_alpha);
-      controller_state.last_u[i] = aa * controller_state.last_u[i] + (1 - aa) * qp_output.u[i];
+      controller_state.last_u[i] = search->second.processSample(robot_state.t, qp_output.u[i]);
     }
   }
   qp_output.u = controller_state.last_u;

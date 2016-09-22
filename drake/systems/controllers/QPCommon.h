@@ -26,7 +26,7 @@ struct QPControllerState {
 
   std::vector<FilterTools::AlphaFilter> comdd_des_alpha_filter;
 
-  //Eigen::Vector3d last_com_ddot_des;
+  std::map<int, FilterTools::AlphaFilter> joint_torque_alpha_filter; 
 
   // output torque
   Eigen::VectorXd last_u;
@@ -265,12 +265,14 @@ struct HardwareParams {
         joint_is_position_controlled(
             Eigen::Matrix<bool, Eigen::Dynamic, 1>::Zero(
                 robot.actuators.size())),
-        maxDeltaPerSecond(Eigen::VectorXd::Zero(robot.actuators.size())) {}
+        maxDeltaPerSecond(Eigen::VectorXd::Zero(robot.actuators.size())),
+        torque_alpha_filter_break_frequency_hz(Eigen::VectorXd::Zero(robot.actuators.size())) {}
 
   HardwareGains gains;
   Eigen::Matrix<bool, Eigen::Dynamic, 1> joint_is_force_controlled;
   Eigen::Matrix<bool, Eigen::Dynamic, 1> joint_is_position_controlled;
   Eigen::VectorXd maxDeltaPerSecond;
+  Eigen::VectorXd torque_alpha_filter_break_frequency_hz;
 
   friend bool operator==(const HardwareParams& lhs, const HardwareParams& rhs) {
     return lhs.gains == rhs.gains &&
@@ -303,8 +305,6 @@ struct QPControllerParams {
         Jpdotv_multiplier(1.0),
         w_zmp(1.0),
         comdd_alpha_break_frequency_hz(1e9),
-        w_comdd_delta(0),
-        comdd_alpha(0.9),
         w_z_trq(0.0),
         min_knee_angle(0.0),
         ankle_torque_alpha(0.0),
@@ -327,8 +327,6 @@ struct QPControllerParams {
   bool useTorqueAlphaFilter;
   double w_zmp;
   double comdd_alpha_break_frequency_hz;
-  double comdd_alpha;
-  double w_comdd_delta;
   double w_z_trq;
   double w_qdd_delta;
   double mu;
@@ -376,7 +374,6 @@ struct QPControllerParams {
       << "contact_threshold: " << params.contact_threshold << std::endl
       << "useTorqueAlphaFilter: " << params.useTorqueAlphaFilter << std::endl
       << "w_zmp: " << params.w_zmp << std::endl
-      << "w_comdd_delta: " << params.w_comdd_delta << std::endl
       << "w_z_trq: " << params.w_z_trq << std::endl
       << "w_qdd_delta: " << params.w_qdd_delta << std::endl
       << "mu: " << params.mu << std::endl

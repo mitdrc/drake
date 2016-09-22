@@ -200,6 +200,9 @@ void loadSingleInputParams(QPControllerParams& params,
   params.hardware.maxDeltaPerSecond(position_index) =
         get(hardware_config, "maxDeltaPerSecond").as<double>();
 
+  params.hardware.torque_alpha_filter_break_frequency_hz(position_index) =
+        get(hardware_config, "torque_alpha_filter_break_frequency_hz").as<double>();
+
   if (params.hardware.joint_is_position_controlled(position_index)) {
     params.hardware.gains.k_q_p(position_index) =
         get(hardware_config, "k_q_p").as<double>();
@@ -322,8 +325,6 @@ QPControllerParams loadSingleParamSet(const YAML::Node& config,
   params.w_grf = get(config, "w_grf").as<double>();
   params.w_zmp = get(config, "w_zmp").as<double>();
   params.comdd_alpha_break_frequency_hz = get(config, "comdd_alpha_break_frequency_hz").as<double>();
-  params.comdd_alpha = get(config, "comdd_alpha").as<double>();
-  params.w_comdd_delta = get(config, "w_comdd_delta").as<double>();
   params.w_z_trq = get(config, "w_z_trq").as<double>();
   params.w_qdd_delta = get(config, "w_qdd_delta").as<double>();
   params.mu = get(config, "mu").as<double>();
