@@ -1,7 +1,7 @@
 if (LCM_FOUND)
   include_directories(${PROJECT_SOURCE_DIR}/pod-build/lcmgen)
   add_executable(carSimLCM simulateLCM.cpp)
-  target_link_libraries(carSimLCM drakeRBSystem drakeLCMSystem)
+  target_link_libraries(carSimLCM drakeRBSystem drakeLCMSystem pthread)
 #  add_test(NAME carSimLCM COMMAND carSimLCM WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/examples/Cars)
 
   add_executable(publishDrivingCommand publishDrivingCommand.cpp)

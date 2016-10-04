@@ -1,6 +1,6 @@
 if (LCM_FOUND)
   add_executable(runPendulumDynamics runDynamics.cpp)
-  target_link_libraries(runPendulumDynamics drakeRBM drakeLCMSystem)
+  target_link_libraries(runPendulumDynamics drakeRBM drakeLCMSystem pthread)
   add_test(NAME runPendulumDynamics COMMAND runPendulumDynamics WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/examples/Pendulum)
 
   add_executable(runPendulumEnergyShaping runEnergyShaping.cpp)

@@ -1,7 +1,7 @@
 
 if (LCM_FOUND AND NOT WIN32)
   add_executable(runQuadrotorDynamics runDynamics.cpp)
-  target_link_libraries(runQuadrotorDynamics drakeRBSystem drakeLCMSystem)
+  target_link_libraries(runQuadrotorDynamics drakeRBSystem drakeLCMSystem pthread)
   add_dependencies(runQuadrotorDynamics drake_lcmtypes lcmtype_agg_hpp)
   pods_use_pkg_config_packages(runQuadrotorDynamics lcm)
   add_test(NAME runQuadrotorDynamics COMMAND runQuadrotorDynamics 5.0)
