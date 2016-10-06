@@ -98,7 +98,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
               mxGetFieldSafe(mex_foot_force_torque_measurements, "right"));
     }
   }
-  int info = controller->setupAndSolveQP(qp_input, robot_state, b_contact_force,
+
+  ResidualState residual_state;
+  residual_state.residual = Eigen::VectorXd::Zero(qd.size());
+  int info = controller->setupAndSolveQP(qp_input, robot_state, residual_state,
+                                         b_contact_force,
                                          foot_force_torque_measurements,
                                          qp_output, debug.get());
 

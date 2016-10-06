@@ -169,6 +169,9 @@ void InstantaneousQPController::initializeFilters() {
     controller_state.comdd_des_alpha_filter.push_back(FilterTools::AlphaFilter(breakFrequencyInHz));
   }
 
+  // filter for residual scale
+  controller_state.residual_scale_filter = FilterTools::AlphaFilter(2.0);
+
   // alpha filtering for joint torques
   Eigen::VectorXd & torque_alpha_filter_break_frequency_hz = param_sets.at("base").hardware.torque_alpha_filter_break_frequency_hz;
 
@@ -726,6 +729,7 @@ const QPControllerParams& InstantaneousQPController::getParamSet(std::string par
 int InstantaneousQPController::setupAndSolveQP(
     const drake::lcmt_qp_controller_input& qp_input,
     const DrakeRobotState& robot_state,
+    const ResidualState& residual_state,
     const Ref<const Matrix<bool, Dynamic, 1>>& contact_detected,
     const std::map<Side, ForceTorqueMeasurement>&
         foot_force_torque_measurements,
@@ -972,6 +976,10 @@ int InstantaneousQPController::setupAndSolveQP(
 
   // C is coriolis term
   C = robot->dynamicsBiasTerm(cache, f_ext);
+  if (C.size() != residual_state.residual.size())
+    throw std::runtime_error("residual dim mismatch.");
+  double residual_scale = controller_state.residual_scale_filter.processSample(robot_state.t, qp_input.residual_scale);
+  C -= residual_scale * residual_state.residual;
 
   // TODO: fixed base
   // need to remove this for fixed base robot, just set 6 to 0
@@ -1409,10 +1417,6 @@ int InstantaneousQPController::setupAndSolveQP(
     for (int i = 0; i < neps; i++)
       ineq_names[index+i] = "slack[" + std::to_string(i) + "]_max";
     index += neps;
-
-    for (size_t i = 0; i < ineq_names.size(); i++) {
-      std::cout << ineq_names[i] << std::endl;
-    }
   }
 
   // these will be the variables in the optimization

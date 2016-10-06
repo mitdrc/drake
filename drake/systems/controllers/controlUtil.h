@@ -132,6 +132,10 @@ class ContactState {
   std::array<bool, SIZE_OF_CONTACT_BODY> body_in_contact_;
 };
 
+struct ResidualState {
+  Eigen::VectorXd residual;
+};
+
 struct DrakeRobotState {
   // drake-ordered position and velocity vectors, with timestamp (in s)
   double t;

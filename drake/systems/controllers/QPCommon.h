@@ -26,7 +26,9 @@ struct QPControllerState {
 
   std::vector<FilterTools::AlphaFilter> comdd_des_alpha_filter;
 
-  std::map<int, FilterTools::AlphaFilter> joint_torque_alpha_filter; 
+  std::map<int, FilterTools::AlphaFilter> joint_torque_alpha_filter;
+
+  FilterTools::AlphaFilter residual_scale_filter;
 
   // output torque
   Eigen::VectorXd last_u;

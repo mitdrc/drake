@@ -50,6 +50,7 @@ class InstantaneousQPController {
   int setupAndSolveQP(
       const drake::lcmt_qp_controller_input& qp_input,
       const DrakeRobotState& robot_state,
+      const ResidualState& residual,
       const Eigen::Ref<const Eigen::Matrix<bool, Eigen::Dynamic, 1>>&
           contact_detected,
       const std::map<Side, ForceTorqueMeasurement>&
