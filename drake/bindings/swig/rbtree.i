@@ -41,7 +41,10 @@
 
 %eigen_typemaps(Eigen::VectorXd)
 %eigen_typemaps(Eigen::Vector2d)
+%eigen_typemaps(Eigen::Vector3d)
 %eigen_typemaps(Eigen::Vector4d)
+%eigen_typemaps(Eigen::Matrix3d)
+%eigen_typemaps(Eigen::Matrix4d)
 %eigen_typemaps(Eigen::Matrix<double, SPACE_DIMENSION, 1>)
 %eigen_typemaps(Eigen::Matrix3Xd)
 %eigen_typemaps(Eigen::Matrix<double, SPACE_DIMENSION, Eigen::Dynamic>)
@@ -74,6 +77,21 @@
   KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73> > > doKinematics(const AutoDiffWrapper<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73>, Eigen::Dynamic, 1>& q, const AutoDiffWrapper<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73>, Eigen::Dynamic, 1>& v) {
     return $self->doKinematics(q, v);
   }
+
+
+  Eigen::Matrix4d relativeTransform(
+      const KinematicsCache<double>& cache, int base_or_frame_ind, int body_or_frame_ind) const {
+    return $self->relativeTransform(cache, base_or_frame_ind, body_or_frame_ind).matrix();
+  }
+
+  Eigen::Matrix3Xd getTerrainContactPoints(
+      const RigidBody& body,
+      const std::string& group_name = "") const {
+    Eigen::Matrix3Xd pts;
+    $self->getTerrainContactPoints(body, pts, group_name);
+    return pts;
+  }
+
 
   Eigen::Matrix<double, SPACE_DIMENSION, Eigen::Dynamic> transformPoints(
       const KinematicsCache<double> &cache, const Eigen::Matrix<double, SPACE_DIMENSION, Eigen::Dynamic> &points, int current_body_or_frame_ind, int new_body_or_frame_ind) const
