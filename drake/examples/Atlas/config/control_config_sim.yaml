@@ -61,7 +61,7 @@ qp_controller_params:
     body_specific:
       DEFAULT:
         Kp: {x: 12, y: 12, z: 12, wx: 12, wy: 12, wz: 12}
-        damping_ratio: 0.7
+        damping_ratio: {x: 0.7, y: 0.7, z: 0.7, wx: 0.7, wy: 0.7, wz: 0.7}
         accel_bounds:
           min: {x: -100, y: -100, z: -100, wx: -50, wy: -50, wz: -50}
           max: {x: 100, y: 100, z: 100, wx: 50, wy: 50, wz: 50}
@@ -69,7 +69,7 @@ qp_controller_params:
       pelvis:
         Kp: {x: 150, y: 150, z: 150, wx: 200, wy: 200, wz: 200}
         weight: 0.01
-        damping_ratio: 0.6
+        damping_ratio: {x: 0.6, y: 0.6, z: 0.6, wx: 0.6, wy: 0.6, wz: 0.6}
       *R_FOOT_NAME :
         weight: 0.01
       *L_FOOT_NAME :
@@ -133,13 +133,14 @@ qp_controller_params:
     w_grf: 0.00
     mu: 1
     w_zmp: 100.0
-    w_comdd_delta: 0.0
+    comdd_alpha_break_frequency_hz: 100.0
     w_z_trq: 0.0
     w_qdd_delta: 0.0
-    useTorqueAlphaFilter: False
     Kp_accel: 1.0
-    ankle_torque_alpha: 0.
-    contact_threshold: 0.002
+    ankle_torque_alpha: 0.0
+    torque_alpha_filter_break_frequency_hz: &TORQUE_BREAK_FREQ 15.0 # just internal for now
+    contact_threshold: 0.002    
+    useTorqueAlphaFilter: False
     min_knee_angle: 0.7
     center_of_mass_observer:
       enabled: false
@@ -150,6 +151,8 @@ qp_controller_params:
         hardware:
           joint_is_force_controlled: true
           joint_is_position_controlled: false
+          maxDeltaPerSecond: 100.0
+          torque_alpha_filter_break_frequency_hz: -1.0 # will ignore it if is negative
           k_f_p: 0
           k_q_p: 0
           k_q_i: 0
@@ -177,11 +180,11 @@ qp_controller_params:
         weight: 0.075
       *R_FOOT_NAME :
         Kp: {x: 100, y: 100, z: 100, wx: 150, wy: 150, wz: 150}
-        damping_ratio: 0.5
+        damping_ratio: {x: 0.5, y: 0.5, z: 0.5, wx: 0.5, wy: 0.5, wz: 0.5}
         weight: 0.001
       *L_FOOT_NAME :
         Kp: {x: 100, y: 100, z: 100, wx: 150, wy: 150, wz: 150}
-        damping_ratio: 0.5
+        damping_ratio: {x: 0.5, y: 0.5, z: 0.5, wx: 0.5, wy: 0.5, wz: 0.5}
         weight: 0.001
       utorso:
         Kp: {x: 0, y: 0, z: 0, wx: 200, wy: 200, wz: 200}
@@ -239,11 +242,11 @@ qp_controller_params:
         weight: 0.075
       *R_FOOT_NAME :
         Kp: {x: 1000, y: 1000, z: 1000, wx: 1500, wy: 1500, wz: 1500}
-        damping_ratio: 0.5
+        damping_ratio: {x: 0.5, y: 0.5, z: 0.5, wx: 0.5, wy: 0.5, wz: 0.5}
         weight: 0.001
       *L_FOOT_NAME :
         Kp: {x: 1000, y: 1000, z: 1000, wx: 1500, wy: 1500, wz: 1500}
-        damping_ratio: 0.5
+        damping_ratio: {x: 0.5, y: 0.5, z: 0.5, wx: 0.5, wy: 0.5, wz: 0.5}
         weight: 0.001
     position_specific:
       DEFAULT:
@@ -418,4 +421,4 @@ qp_controller_params:
     body_specific:
       DEFAULT:
         Kp: {x: 0, y: 0, z: 0, wx: 0, wy: 0, wz: 0}
-        damping_ratio: 0
+        damping_ratio: {x: 0.0, y: 0.0, z: 0.0, wx: 0.0, wy: 0.0, wz: 0.0}
