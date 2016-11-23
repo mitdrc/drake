@@ -1114,9 +1114,15 @@ int InstantaneousQPController::setupAndSolveQP(
                  + u0.transpose() * R_ls
                  - (S*x_bar+0.5*s1).transpose() * B_ls;
   VectorXd comdd_d = R_DQyD_ls.inverse() * lin.transpose();
+
+  for (int i = 0; i < comdd_d.size(); i++){
+    qp_output.comdd_des_unfiltered[i] = comdd_d[i]; // this is the raw comdd_des BEFORE filtering
+  }
+
   for (int i = 0; i < 2; i++) {
     comdd_d[i] = controller_state.comdd_des_alpha_filter[i].processSample(robot_state.t, comdd_d[i]);
   }
+
 
   qp_output.comdd_d = comdd_d;
 

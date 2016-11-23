@@ -442,6 +442,7 @@ struct QPControllerOutput {
 
   // output
   Eigen::Vector3d comdd;
+  Eigen::Vector3d comdd_des_unfiltered;
   Eigen::Vector6d footdd[2];
   Eigen::Vector6d pelvdd;
   Eigen::VectorXd slack;
@@ -449,6 +450,10 @@ struct QPControllerOutput {
 
   bool fastQPFailed;
   int qpInfo;
+
+  QPControllerOutput(){
+    comdd_des_unfiltered = Eigen::Vector3d::Zero();
+  }
 };
 
 struct QPControllerDebugData {
