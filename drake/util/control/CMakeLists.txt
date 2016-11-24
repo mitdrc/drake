@@ -1,0 +1,4 @@
+add_library_with_exports(LIB_NAME drakeActuatorDynamics SOURCE_FILES ActuatorDynamics.cpp)
+pods_use_pkg_config_packages(drakeActuatorDynamics eigen3)
+pods_install_libraries(drakeActuatorDynamics)
+drake_install_headers(SimpleActuatorDynamics.h ActuatorDynamics.h)
