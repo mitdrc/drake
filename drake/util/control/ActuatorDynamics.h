@@ -5,6 +5,11 @@
 #ifndef DRAKE_SUPERBUILD_ACTUATORDYNAMICS_H
 #define DRAKE_SUPERBUILD_ACTUATORDYNAMICS_H
 
+#include "SimpleActuatorDynamics.h"
+#include <Eigen/Dense>
+#include <Eigen/StdVector>
+
+
 namespace ActuatorDynamicsTools {
 
   class ActuatorDynamics: public SimpleActuatorDynamics {
@@ -13,22 +18,28 @@ namespace ActuatorDynamicsTools {
     double t_prev_;
     bool init_;
     double u_max_;
+    int order_;
+    Eigen::MatrixXd A_;
+    std::vector<Eigen::MatrixXd> exp_A_vec_; // stores the relevant terms of exp(A) with the factorials
+    Eigen::VectorXd b_;
+
+    Eigen::VectorXd dt_power_vector_;
+
+    Eigen::VectorXd constant_term_;
+    Eigen::VectorXd linear_term_;
+
+
+    void compute_dt_power_vector(const double& dt);
+    void computeLinearTerm(const Eigen::VectorXd & dt_power_vec);
+    void computeConstantTerm(const Eigen::VectorXd & dt_power_vec);
 
 
   public:
-    ActuatorDynamics(int order, double u_max){
-      x_ = Eigen::VectorXd::Zero(order);
-      u_max_ = u_max;
-    }
+    ActuatorDynamics(int order, double u_max);
 
-    void processSample(const double& t, const double& tau){
-      if (!init_){
-        t_prev = t;
-        x(0) = tau;
-        return;
-      }
-      
-    }
+    void processSample(const double& t, const double& tau);
+
+    std::vector<double> getBounds(const double& t);
   };
 
 

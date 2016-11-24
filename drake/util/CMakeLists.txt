@@ -157,4 +157,5 @@ endif(0) #NOT WIN32)
 
 add_subdirectory(yaml)
 add_subdirectory(filter)
+add_subdirectory(control)
 
