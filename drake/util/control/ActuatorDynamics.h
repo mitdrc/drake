@@ -20,8 +20,9 @@ namespace ActuatorDynamicsTools {
     double u_max_;
     int order_;
     Eigen::MatrixXd A_;
+    Eigen::VectorXd B_;
     std::vector<Eigen::MatrixXd> exp_A_vec_; // stores the relevant terms of exp(A) with the factorials
-    Eigen::VectorXd b_;
+    Eigen::VectorXd factorial_;
 
     Eigen::VectorXd dt_power_vector_;
 

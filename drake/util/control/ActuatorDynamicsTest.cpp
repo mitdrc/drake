@@ -19,8 +19,9 @@ int main(int argc, char** argv) {
 
 	std::cout << "processing sample for actuator \n";
 	actuator.processSample(t, 0.5);
+	actuator.processSample(t + 1, 1.5);
 
-	bounds = actuator.getBounds(t + 1);
+	bounds = actuator.getBounds(t + 3);
 	std::cout << "bounds after update are " << bounds[0] << ' ' << bounds[1] << std::endl;
 }
 
