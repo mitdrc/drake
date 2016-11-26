@@ -5,7 +5,9 @@
 #include "ActuatorDynamics.h"
 #include <cmath>
 #include <limits>
-double LARGE_DOUBLE_VAL = 1e7;
+#include <iostream>
+
+double LARGE_DOUBLE_VAL = 1e6;
 using namespace Eigen;
 namespace ActuatorDynamicsTools {
 
@@ -84,18 +86,27 @@ namespace ActuatorDynamicsTools {
 
   std::vector<double> ActuatorDynamics::getBounds(const double& t){
 
+    std::vector<double> bounds(2);
+
     // if not initialized just return some large values
     if(!init_){
-      std::vector<double> bounds(-LARGE_DOUBLE_VAL, LARGE_DOUBLE_VAL); // just return some large bounds
+      bounds[0] = -LARGE_DOUBLE_VAL;
+      bounds[1] = LARGE_DOUBLE_VAL;
+      return bounds;
     }
 
     double dt = t - t_prev_;
+    std::cout << dt << std::endl;
     this->compute_dt_power_vector(dt);
     this->computeLinearTerm(dt_power_vector_);
     this->computeConstantTerm(dt_power_vector_);
 
     double lower_bound = (constant_term_*x_ - linear_term_*u_max_)(0); // just look at first entry;
     double upper_bound = (constant_term_*x_ + linear_term_*u_max_)(0);
+
+    bounds[0] = lower_bound;
+    bounds[1] = upper_bound;
+    return bounds;
   }
 
   // populates dt_vector_ such that dt_vector_(i) = (dt)^(i+1)
