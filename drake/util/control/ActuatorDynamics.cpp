@@ -11,15 +11,6 @@ double LARGE_DOUBLE_VAL = 1e6;
 using namespace Eigen;
 
 
-// void printVector(Eigen::VectorXd& vec){
-//   for (int i = 0 ; i < vec.length(); i++){
-//     std::cout << vec[i] << " "; 
-//   }
-
-//   std::cout << std::endl;
-// }
-
-
 namespace ActuatorDynamicsTools {
 
   ActuatorDynamics::ActuatorDynamics(int order, double u_max){
@@ -72,6 +63,12 @@ namespace ActuatorDynamicsTools {
     }
 
     double dt = t - t_prev_;
+    if (!dt > 0){
+      // should avoid getting any nans in the state
+      std::cout << "dt is non-positive, doing nothing " << std::endl;
+      t_prev_ = t;
+      return;
+    }
     this->compute_dt_power_vector(dt);
     this->computeLinearTerm(dt_power_vector_);
     this->computeConstantTerm(dt_power_vector_);
@@ -124,13 +121,13 @@ namespace ActuatorDynamicsTools {
     }
 
     double dt = t - t_prev_;
-    std::cout << "dt is " << dt << std::endl;
     this->compute_dt_power_vector(dt);
     this->computeLinearTerm(dt_power_vector_);
     this->computeConstantTerm(dt_power_vector_);
 
 
-    if (true){
+    if (false){
+      std::cout << "dt is " << dt << std::endl;
       std::cout << "dt_power_vector_ " << dt_power_vector_ << std::endl;
       std::cout << "constant term " << constant_term_ << std::endl;
       std::cout << "linear term " << linear_term_ << std::endl;

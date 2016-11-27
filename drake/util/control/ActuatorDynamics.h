@@ -14,7 +14,7 @@ namespace ActuatorDynamicsTools {
 
   class ActuatorDynamics: public SimpleActuatorDynamics {
   private:
-    Eigen::VectorXd x_; // contains tau and required derivatives
+
     double t_prev_;
     bool init_;
     double u_max_;
@@ -36,6 +36,10 @@ namespace ActuatorDynamicsTools {
 
 
   public:
+    // HACK for now so that we can inspect it
+
+    Eigen::VectorXd x_; // contains tau and required derivatives
+    ActuatorDynamics(){} // default constructor, does nothing
     ActuatorDynamics(int order, double u_max);
 
     void processSample(const double& t, const double& tau);
