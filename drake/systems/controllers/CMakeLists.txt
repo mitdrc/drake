@@ -1,7 +1,7 @@
 drake_install_headers(LQR.h)
 
 add_library_with_exports(LIB_NAME drakeControlUtil SOURCE_FILES controlUtil.cpp)
-target_link_libraries(drakeControlUtil drakeRBM drakeUtil drakeTrajectories drakeFilterUtil)
+target_link_libraries(drakeControlUtil drakeRBM drakeUtil drakeTrajectories drakeFilterUtil drakeActuatorDynamics)
 pods_install_libraries(drakeControlUtil)
 drake_install_headers(controlUtil.h)
 pods_install_pkg_config_file(drake-control-util
@@ -12,7 +12,7 @@ pods_install_pkg_config_file(drake-control-util
 pods_find_pkg_config(gurobi)
 if (gurobi_FOUND AND LCM_FOUND AND yaml-cpp_FOUND)
   add_library_with_exports(LIB_NAME drakeQPCommon SOURCE_FILES InstantaneousQPController.cpp)
-  target_link_libraries(drakeQPCommon drakeControlUtil drakeQP drakeTrajectories drakeLCMUtil drakeSide drakeYAMLUtil)
+  target_link_libraries(drakeQPCommon drakeControlUtil drakeQP drakeTrajectories drakeLCMUtil drakeSide drakeYAMLUtil drakeActuatorDynamics)
   pods_use_pkg_config_packages(drakeQPCommon lcm)
   pods_install_libraries(drakeQPCommon)
   drake_install_headers(QPCommon.h InstantaneousQPController.h)

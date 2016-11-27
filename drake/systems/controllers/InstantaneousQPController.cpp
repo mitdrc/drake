@@ -94,6 +94,7 @@ void InstantaneousQPController::initialize() {
       umax(i) = 500;
 
     actuator_name_to_input_idx[robot->actuators.at(i).name] = i;
+    std::cout << "actuator name " << robot->actuators.at(i).name << std::endl;
   }
 
   qdd_lb = Eigen::VectorXd::Zero(nq).array() -
@@ -178,6 +179,19 @@ void InstantaneousQPController::initializeFilters() {
     // a negative value means to not do any filtering
     if(breakFrequencyInHz > 0){
       controller_state.joint_torque_alpha_filter[i] = FilterTools::AlphaFilter(breakFrequencyInHz);
+    }
+  }
+
+  std::vector<std::pair<int, double>> & actuator_dynamics_model_data = param_sets.at("base").hardware.actuator_dynamics_model_data;
+
+  for(int i = 0; i < actuator_dynamics_model_data.size(); i++){
+    int model_order = actuator_dynamics_model_data[i].first;
+    double input_limit = actuator_dynamics_model_data[i].second;
+
+    // ignore this if model_order < 0, that means don't use it
+    if( model_order > 0){
+      std::shared_ptr<ActuatorDynamicsTools::ActuatorDynamics> single_actuator_dynamics_ptr(new ActuatorDynamicsTools::ActuatorDynamics(model_order, input_limit));
+      controller_state.actuator_dynamics[i] = single_actuator_dynamics_ptr;
     }
   }
 
@@ -739,6 +753,8 @@ int InstantaneousQPController::setupAndSolveQP(
   // Note: argument `debug` MAY be set to NULL, which signals that no debug
   // information is requested.
 
+  bool verbose_local = true; // just a debugging tool
+
   double dt = 0.0;
   if (controller_state.t_prev != 0.0) {
     dt = robot_state.t - controller_state.t_prev;
@@ -1267,6 +1283,43 @@ int InstantaneousQPController::setupAndSolveQP(
 
   auto B_act = robot->B.bottomRows(robot->B.cols());
 
+
+
+  // Input Limit Constraints
+  // call the actuator dynamics class to get the bounds
+  // update the actuator dynamics model
+  std::vector<double> bounds;
+  for (auto & entry : controller_state.actuator_dynamics){
+    bounds = entry.second->getBounds(robot_state.t);
+    umin(entry.first) = bounds[0];
+    umax(entry.first) = bounds[1];
+  }
+
+
+  //TODO: Lucas's debugging stuff
+  int l_leg_kny_actuator_idx = actuator_name_to_input_idx["l_leg_kny_motor"];
+  auto& actuator = robot->actuators.at(l_leg_kny_actuator_idx);
+
+  auto & actuator_dynamics = controller_state.actuator_dynamics[l_leg_kny_actuator_idx];
+  bounds = actuator_dynamics->getBounds(robot_state.t);
+
+  qp_output.actuator_dynamics_state = actuator_dynamics->x_(0);
+  qp_output.actuator_dynamics_lower_bound = bounds[0];
+  qp_output.actuator_dynamics_upper_bound = bounds[1];
+
+
+  // run a little test, print out the info for l_leg_kny
+
+  if (verbose_local){
+    std::cout << "actuator idx " << l_leg_kny_actuator_idx << std::endl;
+    std::cout << "actuator name " << actuator.name << std::endl;
+    std::cout << "actuator dynamics state " << actuator_dynamics->x_(0) << std::endl;
+    std::cout << "lower bound " << bounds[0] << " upper bound " << bounds[1] << std::endl;
+    std::cout << "dt " << robot_state.t-controller_state.t_prev << std::endl;
+  }
+
+
+
   // linear input saturation constraints
   // u=B_act'*(H_act*qdd + C_act - Jz_act'*z - Dbar_act*beta)
   // using transpose instead of inverse because B is orthogonal
@@ -1734,6 +1787,18 @@ int InstantaneousQPController::setupAndSolveQP(
   }
   qp_output.u = controller_state.last_u;
 
+  // update the actuator dynamics model
+  for (auto & entry : controller_state.actuator_dynamics){
+    entry.second->processSample(robot_state.t, qp_output.u(entry.first));
+
+    if (verbose_local){
+      if (entry.first == l_leg_kny_actuator_idx){
+        std::cout << "l_leg_kny torque is " << qp_output.u(entry.first) << std::endl;
+      }
+    }
+
+  }
+
   // y = B_act.jacobiSvd(ComputeThinU|ComputeThinV).solve(H_act*qdd + C_act -
   // Jz_act.transpose()*lambda - D_act*beta);
 
@@ -1770,8 +1835,11 @@ int InstantaneousQPController::setupAndSolveQP(
 
   qp_output.qdd_des_w_pd = pid_out.qddot_des;
 
+  qp_output.dt = robot_state.t - controller_state.t_prev;
+
   // Remember t for next time around
   controller_state.t_prev = robot_state.t;
+
 
   // If a debug pointer was passed in, fill it with useful data
   if (debug) {

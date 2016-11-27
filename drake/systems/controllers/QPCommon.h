@@ -9,6 +9,7 @@
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
 #include "drake/systems/robotInterfaces/Side.h"
 #include "drake/util/filter/AlphaFilter.hpp"
+#include "drake/util/control/ActuatorDynamics.h"
 
 struct QPControllerState {
   double t_prev;
@@ -26,7 +27,11 @@ struct QPControllerState {
 
   std::vector<FilterTools::AlphaFilter> comdd_des_alpha_filter;
 
-  std::map<int, FilterTools::AlphaFilter> joint_torque_alpha_filter; 
+  std::map<int, FilterTools::AlphaFilter> joint_torque_alpha_filter;
+
+  std::map<int, std::shared_ptr<ActuatorDynamicsTools::ActuatorDynamics>> actuator_dynamics;
+
+//  std::map<int, ActuatorDynamicsTools::ActuatorDynamics> actuator_dynamics;
 
   // output torque
   Eigen::VectorXd last_u;
@@ -266,13 +271,15 @@ struct HardwareParams {
             Eigen::Matrix<bool, Eigen::Dynamic, 1>::Zero(
                 robot.actuators.size())),
         maxDeltaPerSecond(Eigen::VectorXd::Zero(robot.actuators.size())),
-        torque_alpha_filter_break_frequency_hz(Eigen::VectorXd::Zero(robot.actuators.size())) {}
+        torque_alpha_filter_break_frequency_hz(Eigen::VectorXd::Zero(robot.actuators.size())),
+        actuator_dynamics_model_data(robot.actuators.size()){}
 
   HardwareGains gains;
   Eigen::Matrix<bool, Eigen::Dynamic, 1> joint_is_force_controlled;
   Eigen::Matrix<bool, Eigen::Dynamic, 1> joint_is_position_controlled;
   Eigen::VectorXd maxDeltaPerSecond;
   Eigen::VectorXd torque_alpha_filter_break_frequency_hz;
+  std::vector<std::pair<int, double>> actuator_dynamics_model_data; // stores model order and input limit
 
   friend bool operator==(const HardwareParams& lhs, const HardwareParams& rhs) {
     return lhs.gains == rhs.gains &&
@@ -448,8 +455,14 @@ struct QPControllerOutput {
   Eigen::VectorXd slack;
   std::vector<QPControllerContactOutput> contact_output;
 
+  double actuator_dynamics_state;
+  double actuator_dynamics_lower_bound;
+  double actuator_dynamics_upper_bound;
+
+
   bool fastQPFailed;
   int qpInfo;
+  double dt;
 
   QPControllerOutput(){
     comdd_des_unfiltered = Eigen::Vector3d::Zero();
