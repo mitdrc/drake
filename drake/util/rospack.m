@@ -31,6 +31,8 @@ if isempty(packages)  % cache packages
   package_paths{end+1} = [getDrakePath,'/examples/Valkyrie'];
   packages{end+1} = 'IRB140';
   package_paths{end+1} = [getDrakePath,'/examples/IRB140'];
+  packages{end+1} = 'lwr_defs';
+  package_paths{end+1} = [getenv('DRC_BASE'),'/software/models/lwr_defs'];
 end
 
 if strcmp(package,'-list')
