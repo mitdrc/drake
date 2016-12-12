@@ -337,12 +337,15 @@ VectorXd InstantaneousQPController::velocityReference(
     }
   }
 
+  // std::cout << "dt in vref integrator " << dt << std::endl;
+  // std::cout << "eta in vref integrator " << params.eta << std::endl;
+  // std::cout << "qdd " << qdd_limited << std::endl  << std::endl << std::endl;  
+
   controller_state.vref_integrator_state =
       (1 - params.eta) * controller_state.vref_integrator_state +
       params.eta * qd + qdd_limited * dt;
 
-  // TODO: sfeng disable the integrator resetting on contact switching.
-  /*
+
   if (params.zero_ankles_on_contact && foot_contact[0] == 1) {
     for (i = 0; i < rpc.position_indices.ankles.at(Side::LEFT).size(); i++) {
       controller_state.vref_integrator_state(
@@ -369,7 +372,7 @@ VectorXd InstantaneousQPController::velocityReference(
           Side::RIGHT)[i]) = qd(rpc.position_indices.legs.at(Side::RIGHT)[i]);
     }
   }
-  */
+  
 
   controller_state.foot_contact_prev[0] = foot_contact[0];
   controller_state.foot_contact_prev[1] = foot_contact[1];
