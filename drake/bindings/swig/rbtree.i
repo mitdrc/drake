@@ -65,7 +65,27 @@
 %immutable RigidBodyTree::actuators;
 %immutable RigidBodyTree::loops;
 %include "drake/systems/plants/RigidBodyTree.h"
+%include "drake/systems/plants/joints/DrakeJoints.h"
 %extend RigidBodyTree {
+  RigidBodyTree(const std::string& urdf_filename,
+                const std::string& joint_type = "ROLLPITCHYAW") {
+    // FIXED = 0, ROLLPITCHYAW = 1, QUATERNION = 2
+    DrakeJoint::FloatingBaseType floating_base_type;
+
+    if (joint_type == "FIXED")
+      floating_base_type = DrakeJoint::FIXED;
+    else if (joint_type == "ROLLPITCHYAW")
+      floating_base_type = DrakeJoint::ROLLPITCHYAW;
+    else if (joint_type == "QUATERNION")
+      floating_base_type = DrakeJoint::QUATERNION;
+    else {
+      std::cerr << "Joint Type not supported" << std::endl;
+      return nullptr;
+    }
+
+    return new RigidBodyTree(urdf_filename, floating_base_type);
+  }
+
   KinematicsCache<double> doKinematics(const Eigen::MatrixBase<Eigen::VectorXd>& q, const Eigen::MatrixBase<Eigen::VectorXd>& v) {
     return $self->doKinematics(q, v);
   }
