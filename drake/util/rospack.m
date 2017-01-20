@@ -31,6 +31,22 @@ if isempty(packages)  % cache packages
   package_paths{end+1} = [getDrakePath,'/examples/Valkyrie'];
   packages{end+1} = 'IRB140';
   package_paths{end+1} = [getDrakePath,'/examples/IRB140'];
+  
+  packages{end+1} = 'lwr_defs';
+  package_paths{end+1} = '/home/wxm/dev/oh-distro-private/software/models/lwr_defs';
+  
+  packages{end+1} = 'dual_arm_husky_description';
+  package_paths{end+1} = '/home/wxm/dev/oh-distro-private/software/models/dual_arm_husky_description';
+  packages{end+1} = 'flir_ptu_description';
+  package_paths{end+1} = '/home/wxm/dev/oh-distro-private/software/models/common_components/flir_ptu_description';
+  packages{end+1} = 'ur_description';
+  package_paths{end+1} = '/home/wxm/dev/oh-distro-private/software/models/ur_description';
+  packages{end+1} = 'lms1xx';
+  package_paths{end+1} = '/home/wxm/dev/oh-distro-private/software/models/common_components/lms1xx';
+  packages{end+1} = 'robotiq_force_torque_sensor';
+  package_paths{end+1} = '/home/wxm/dev/oh-distro-private/software/models/common_components/robotiq_force_torque_sensor';
+  packages{end+1} = 'robotiq_hand_description';
+  package_paths{end+1} = '/home/wxm/dev/oh-distro-private/software/models/common_components/robotiq_hand_description';
 end
 
 if strcmp(package,'-list')
