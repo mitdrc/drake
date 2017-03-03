@@ -346,6 +346,7 @@ VectorXd InstantaneousQPController::velocityReference(
       params.eta * qd + qdd_limited * dt;
 
 
+  // NOTE: qd_err gets set to zero below if you are using this option
   if (params.zero_ankles_on_contact && foot_contact[0] == 1) {
     for (i = 0; i < rpc.position_indices.ankles.at(Side::LEFT).size(); i++) {
       controller_state.vref_integrator_state(
@@ -1418,10 +1419,6 @@ int InstantaneousQPController::setupAndSolveQP(
     for (int i = 0; i < neps; i++)
       ineq_names[index+i] = "slack[" + std::to_string(i) + "]_max";
     index += neps;
-
-    for (size_t i = 0; i < ineq_names.size(); i++) {
-      std::cout << ineq_names[i] << std::endl;
-    }
   }
 
   // these will be the variables in the optimization
