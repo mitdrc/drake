@@ -557,6 +557,12 @@ void evaluateXYZExpmapCubicSpline(double t,
     omega(i) = omega_autodiff(i).value().value();
     omega_dot(i) = omega_autodiff(i).derivatives()(0).value();
   }
+
+  // If time is outsiede of spline's time, set velocity and acceleration to zero.
+  if (t >= spline.getEndTime() || t <= spline.getStartTime()) {
+    xyzdot_angular_vel.setZero();
+    xyzddot_angular_accel.setZero();
+  }
 }
 
 void getRobotJointIndexMap(const JointNames *joint_names,
