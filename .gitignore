@@ -21,7 +21,6 @@
 uname.err
 externals/*
 !externals/install_prereqs.sh
-drake/cmake
 drake/util/drake_config.mat
 drake/doc/derivations/elib.bib
 drake/.python
