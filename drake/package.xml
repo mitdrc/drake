@@ -6,5 +6,6 @@
     <license>BSD</license>
     <url type="website">http://drake.mit.edu</url>
     <url type="bugtracker">https://github.com/RobotLocomotion/drake/issues</url>
+    <buildtool_depend>catkin</buildtool_depend>
 </package>
 

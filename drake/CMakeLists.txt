@@ -1,5 +1,50 @@
 cmake_minimum_required(VERSION 2.8.6) # for UseJava.cmake
 
+project(drake)
+find_package(catkin REQUIRED COMPONENTS
+)
+
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/lcmgen)
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/generated)
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/exports)
+
+catkin_package(
+  INCLUDE_DIRS
+    ../
+    ${PROJECT_BINARY_DIR}/lcmgen/
+    ${PROJECT_BINARY_DIR}/generated/
+    ${PROJECT_BINARY_DIR}/exports/
+  LIBRARIES
+    drakeAtlasUtil
+    drakeCollision
+    drakeConstructRigidBodyConstraint
+    drakeControlMexUtil
+    drakeControlUtil
+    drakeConvexHull
+    drakeGeometryUtil
+    drakeIKoptions
+    drakeIK
+    drakeJoints
+    drakeLCMSystem
+    drake_lcmtypes
+    drakeLCMUtil
+    drakeMexUtil
+    drakeOptimization
+    drakePolynomial
+    drakeQPCommon
+    drakeQPLocomotionPlan
+    drakeQP
+    drakeRBM
+    drakeRBSystem
+    drakeRigidBodyConstraint
+    drakeShapes
+    drakeSide
+    drakeSplineGeneration
+    drakeTrajectories
+    drakeUtil
+    drakeZMPUtil
+)
+
 # options
 option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
 option(RANDOMIZE_UNIT_TESTS "every matlab unit is started with a new random seed" OFF)
