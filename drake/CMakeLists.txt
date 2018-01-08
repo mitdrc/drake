@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8.6) # for UseJava.cmake
 
 project(drake)
 find_package(catkin REQUIRED COMPONENTS
+  swigmake
 )
 
 file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/lcmgen)
